@@ -5,6 +5,7 @@ attribute vec2 a_uv;
 uniform vec2 u_center;
 uniform vec2 u_extent;
 uniform vec2 u_view;
+uniform float u_lens;
 uniform vec3 u_angles;
 uniform float u_scale;
 uniform vec2 u_decalHeight;
@@ -25,10 +26,9 @@ void main() {
     float y = u_decalHeight.x + (a_position.y - u_decalHeight.x) * u_decalHeight.y;
     vec3 local = vec3(a_position.x, y, a_position.z) * vec3(u_extent, u_extent.x) * u_scale;
     vec3 point = attitude * local;
-    float lens = max(u_view.x, u_view.y) * 0.95;
-    float w = 1. - point.z / lens;
+    float w = 1. - point.z / u_lens;
     vec2 center = 2. * u_center / u_view - 1.;
-    gl_Position = vec4(center * w + 2. * point.xy / u_view, -point.z / lens, w);
+    gl_Position = vec4(center * w + 2. * point.xy / u_view, -point.z / u_lens, w);
     v_normal = attitude * normalize(a_normal * vec3(1., u_extent.x / u_extent.y, 1.));
     v_front = attitude[2];
     v_right = attitude[0];
@@ -115,9 +115,64 @@ const decals = [
 const hidden = { pitch: -0.28, yaw: 0.38, roll: -0.06, scale: 0.76, lift: 62, opacity: 0 };
 const resting = { pitch: 0.015, yaw: -0.025, roll: 0.01, scale: 1, lift: 0, opacity: 1 };
 const motion = { opening: 520, switching: 315, closing: 360 };
+const maxCanvasPixels = 1_650_000;
 const interpolate = (from, to, fraction) => from + (to - from) * fraction;
 const ease = fraction => 1 - (1 - fraction) ** 3;
 const limit = (value, max) => Math.max(-max, Math.min(max, value));
+
+function getHardwareContext(canvas) {
+    try {
+        const gl = canvas.getContext('webgl', {
+            alpha: true, antialias: true, premultipliedAlpha: false, failIfMajorPerformanceCaveat: true,
+        });
+        if (!gl) return null;
+        const debug = gl.getExtension('WEBGL_debug_renderer_info');
+        const renderer = gl.getParameter(debug?.UNMASKED_RENDERER_WEBGL ?? gl.RENDERER);
+        if (!/swiftshader|llvmpipe|softpipe|lavapipe|software rasterizer|microsoft basic render driver|\bwarp\b/i.test(renderer)) return gl;
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
+    } catch {
+        // Browser settings may disable WebGL or renderer identification.
+    }
+    return null;
+}
+
+function projectBounds({ box, lens, pitch, yaw, roll, scale, lift }, extent) {
+    const centerX = box.x + box.width / 2;
+    const centerY = box.y + box.height / 2 + lift;
+    const rx = extent[0] * box.width / 2 * scale;
+    let halfHeight = extent[1] * box.height / 2;
+    for (const { center, extent: size, aspect } of decals) {
+        halfHeight = Math.max(halfHeight, Math.abs(center[1]) * box.height / 2 + size[0] * box.width / 2 / aspect);
+    }
+    const ry = halfHeight * scale;
+    const rz = extent[2] * box.width / 2 * scale;
+    const sx = Math.sin(pitch), cx = Math.cos(pitch);
+    const sy = Math.sin(yaw), cy = Math.cos(yaw);
+    const sz = Math.sin(roll), cz = Math.cos(roll);
+    let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+
+    // Project the corners of a cuboid enclosing the mesh and the three decals.
+    const sides = [-1, 1];
+    for (const ySide of sides) {
+        for (const zSide of sides) {
+            const pitchY = ySide * ry * cx - zSide * rz * sx;
+            const pitchZ = ySide * ry * sx + zSide * rz * cx;
+            for (const xSide of sides) {
+                const x = xSide * rx;
+                const yawX = x * cy + pitchZ * sy;
+                const yawZ = -x * sy + pitchZ * cy;
+                const perspective = 1 / (1 - yawZ / lens);
+                const px = centerX + (yawX * cz - pitchY * sz) * perspective;
+                const py = centerY - (yawX * sz + pitchY * cz) * perspective;
+                left = Math.min(left, px);
+                right = Math.max(right, px);
+                top = Math.min(top, py);
+                bottom = Math.max(bottom, py);
+            }
+        }
+    }
+    return { left, top, right, bottom };
+}
 
 function shader(gl, type, source) {
     const result = gl.createShader(type);
@@ -188,12 +243,14 @@ function loadImage(win, src) {
 
 export function createJewelScene(surface, {
     resolveAsset = name => new URL(`./assets/mixtape/${name}`, import.meta.url),
+    onPose,
 } = {}) {
     const doc = surface.ownerDocument;
     const win = doc.defaultView;
     const canvas = doc.createElement('canvas');
     canvas.className = 'mt-scene-canvas';
     canvas.setAttribute('aria-hidden', 'true');
+    canvas.style.inset = 'auto';
     surface.prepend(canvas);
     surface.dataset.renderer = 'flat';
     surface.dataset.motion = 'idle';
@@ -202,7 +259,8 @@ export function createJewelScene(surface, {
     const eventOptions = { signal: resources.signal, passive: true };
     const reducedBySystem = win.matchMedia('(prefers-reduced-motion: reduce)');
     const reduced = () => reducedBySystem.matches || doc.body.classList.contains('reduced-motion');
-    const gl = canvas.getContext('webgl', { alpha: true, antialias: true, premultipliedAlpha: false });
+    let wasReduced = reduced();
+    const gl = getHardwareContext(canvas);
     const objects = [];
     let program;
     let coverSurface;
@@ -211,6 +269,8 @@ export function createJewelScene(surface, {
     let frame = 0;
     let active = false;
     let box;
+    let region;
+    const meshExtent = [1, 1, 0.002];
     let pose = { ...hidden };
     let transition;
     let tilt = [0, 0];
@@ -222,30 +282,63 @@ export function createJewelScene(surface, {
     }
 
     function requestDraw() {
-        if (!resources.signal.aborted && !frame) frame = win.requestAnimationFrame(draw);
+        if (!resources.signal.aborted && !doc.hidden && !frame && (active || transition)) {
+            frame = win.requestAnimationFrame(draw);
+        }
     }
 
-    function render() {
-        if (!gl || !program || !objects.length || gl.isContextLost() || !box) return;
-        const width = win.innerWidth;
-        const height = win.innerHeight;
-        const scale = Math.min(win.devicePixelRatio || 1, 1.65);
-        if (canvas.width !== Math.round(width * scale) || canvas.height !== Math.round(height * scale)) {
-            canvas.width = Math.round(width * scale);
-            canvas.height = Math.round(height * scale);
+    function updateMotionPreference() {
+        const next = reduced();
+        if (wasReduced === next) return;
+        wasReduced = next;
+        requestDraw();
+    }
+
+    function fitCanvas(state) {
+        const { innerWidth, innerHeight, devicePixelRatio = 1 } = win;
+        const projected = projectBounds(state, meshExtent);
+        const previous = region?.viewWidth === innerWidth && region.viewHeight === innerHeight ? region : null;
+        const pad = 28;
+        if (!previous || (previous.left > 0 && projected.left < previous.left + 2)
+            || (previous.top > 0 && projected.top < previous.top + 2)
+            || (previous.right < innerWidth && projected.right > previous.right - 2)
+            || (previous.bottom < innerHeight && projected.bottom > previous.bottom - 2)) {
+            // Keep a margin for normal rotation, grow only if the moving shell reaches it,
+            // and reset on layout changes so the backing buffer is not resized every frame.
+            const left = Math.max(0, Math.floor(Math.min(previous?.left ?? box.x - pad, projected.left - pad)));
+            const top = Math.max(0, Math.floor(Math.min(previous?.top ?? box.y - pad, projected.top - pad)));
+            const right = Math.min(innerWidth, Math.ceil(Math.max(previous?.right ?? box.x + box.width + pad, projected.right + pad)));
+            const bottom = Math.min(innerHeight, Math.ceil(Math.max(previous?.bottom ?? box.y + box.height + pad, projected.bottom + pad)));
+            const width = right - left;
+            const height = bottom - top;
+            region = { left, top, right, bottom, width, height, viewWidth: innerWidth, viewHeight: innerHeight };
+            Object.assign(canvas.style, { left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` });
         }
-        gl.viewport(0, 0, canvas.width, canvas.height);
+
+        const { width, height } = region;
+        const ratio = Math.min(devicePixelRatio, 1.65, Math.sqrt(maxCanvasPixels / (width * height)));
+        const pixelWidth = Math.max(1, Math.floor(width * ratio));
+        const pixelHeight = Math.max(1, Math.floor(height * ratio));
+        if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
+        if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
+    }
+
+    function render(state) {
+        if (!gl || !program || !objects.length || gl.isContextLost()) return;
+        if (state.opacity > 0) fitCanvas(state);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        if (pose.opacity <= 0) return;
+        if (state.opacity <= 0) return;
+        gl.viewport(0, 0, canvas.width, canvas.height);
         gl.useProgram(program);
-        gl.uniform2f(uniforms.center, box.x + box.width / 2, height - box.y - box.height / 2 - pose.lift);
+        gl.uniform2f(uniforms.center, box.x + box.width / 2 - region.left, region.bottom - box.y - box.height / 2 - state.lift);
         gl.uniform2f(uniforms.extent, box.width / 2, box.height / 2);
-        gl.uniform2f(uniforms.view, width, height);
-        gl.uniform1f(uniforms.cameraDistance, Math.max(width, height) * 0.95 / (box.width / 2));
-        gl.uniform3f(uniforms.angles, pose.pitch + tilt[0], pose.yaw + tilt[1], pose.roll);
-        gl.uniform1f(uniforms.scale, pose.scale);
-        gl.uniform2f(uniforms.light, ...(reduced() ? [0, 0] : pointer));
-        gl.uniform1f(uniforms.opacity, pose.opacity);
+        gl.uniform2f(uniforms.view, region.width, region.height);
+        gl.uniform1f(uniforms.lens, state.lens);
+        gl.uniform1f(uniforms.cameraDistance, state.lens / (box.width / 2));
+        gl.uniform3f(uniforms.angles, state.pitch, state.yaw, state.roll);
+        gl.uniform1f(uniforms.scale, state.scale);
+        gl.uniform2f(uniforms.light, state.lightX, state.lightY);
+        gl.uniform1f(uniforms.opacity, state.opacity);
         for (const object of objects) {
             gl.uniform1f(uniforms.decal, object.decal ? 1 : 0);
             const decal = object.decal;
@@ -266,8 +359,10 @@ export function createJewelScene(surface, {
 
     function draw(now) {
         frame = 0;
+        if (doc.hidden || !box) return;
+        const still = reduced();
         if (transition) {
-            const fraction = reduced() ? 1 : Math.min(1, (now - transition.start) / transition.duration);
+            const fraction = still ? 1 : Math.min(1, (now - transition.start) / transition.duration);
             for (const key of Object.keys(resting)) pose[key] = interpolate(transition.from[key], transition.to[key], ease(fraction));
             if (fraction === 1) {
                 transition = undefined;
@@ -275,9 +370,18 @@ export function createJewelScene(surface, {
                 if (!active) surface.hidden = true;
             }
         }
-        const target = active && !reduced() ? [-pointer[1] * 0.035 + manual[0], pointer[0] * 0.06 + manual[1]] : [0, 0];
-        for (let axis = 0; axis < 2; axis++) tilt[axis] = interpolate(tilt[axis], target[axis], 0.22);
-        render();
+        const target = active && !still ? [-pointer[1] * 0.035 + manual[0], pointer[0] * 0.06 + manual[1]] : [0, 0];
+        for (let axis = 0; axis < 2; axis++) {
+            if (still || Math.abs(tilt[axis] - target[axis]) < 0.0004) tilt[axis] = target[axis];
+            else tilt[axis] = interpolate(tilt[axis], target[axis], 0.22);
+        }
+        const state = {
+            ...pose, box, lens: Math.max(win.innerWidth, win.innerHeight) * 0.95,
+            pitch: pose.pitch + tilt[0], yaw: pose.yaw + tilt[1],
+            lightX: still ? 0 : pointer[0], lightY: still ? 0 : pointer[1],
+        };
+        onPose?.(state);
+        render(state);
         if (transition || tilt.some((angle, axis) => Math.abs(angle - target[axis]) > 0.0004)) requestDraw();
     }
 
@@ -296,8 +400,11 @@ export function createJewelScene(surface, {
 
     function layout(nextBox) {
         if (!nextBox || nextBox.width < 1 || nextBox.height < 1) return;
-        box = nextBox;
-        for (const [name, value] of Object.entries(nextBox)) surface.style.setProperty(`--mt-scene-${name}`, `${value}px`);
+        if (!box || box.x !== nextBox.x || box.y !== nextBox.y || box.width !== nextBox.width || box.height !== nextBox.height) {
+            box = nextBox;
+            region = undefined;
+            for (const [name, value] of Object.entries(nextBox)) surface.style.setProperty(`--mt-scene-${name}`, `${value}px`);
+        }
         requestDraw();
     }
 
@@ -328,7 +435,7 @@ export function createJewelScene(surface, {
         if (resources.signal.aborted || gl.isContextLost()) return;
         program = buildProgram(gl);
         attributes = Object.fromEntries(['position', 'normal', 'uv'].map(name => [name, gl.getAttribLocation(program, `a_${name}`)]));
-        uniforms = Object.fromEntries(['center', 'extent', 'view', 'angles', 'scale', 'light', 'cameraDistance', 'surface', 'opacity', 'decal', 'decalHeight'].map(
+        uniforms = Object.fromEntries(['center', 'extent', 'view', 'lens', 'angles', 'scale', 'light', 'cameraDistance', 'surface', 'opacity', 'decal', 'decalHeight'].map(
             name => [name, gl.getUniformLocation(program, `u_${name}`)]));
         gl.useProgram(program);
         gl.uniform1i(uniforms.surface, 1);
@@ -343,10 +450,14 @@ export function createJewelScene(surface, {
         const shell = mesh ?? fallbackMesh;
         putImage(shell, images[0], false);
         let surfaceDepth = 0;
-        for (let vertex = 2; vertex < shell.positions.length; vertex += 3) {
-            surfaceDepth = Math.max(surfaceDepth, shell.positions[vertex]);
+        for (let vertex = 0; vertex < shell.positions.length; vertex += 3) {
+            for (let axis = 0; axis < 3; axis++) {
+                meshExtent[axis] = Math.max(meshExtent[axis], Math.abs(shell.positions[vertex + axis]));
+            }
+            surfaceDepth = Math.max(surfaceDepth, shell.positions[vertex + 2]);
         }
         const depth = surfaceDepth + 0.002;
+        meshExtent[2] = Math.max(meshExtent[2], depth);
         for (const [index, decal] of decals.entries()) putImage(decalGeometry(decal, depth), images[index + 1], decal);
         surface.dataset.renderer = 'webgl';
         surface.dataset.geometry = mesh ? 'original' : 'textured-plane';
@@ -354,14 +465,22 @@ export function createJewelScene(surface, {
         requestDraw();
     }
 
-    canvas.addEventListener('webglcontextlost', event => {
-        event.preventDefault();
+    canvas.addEventListener('webglcontextlost', () => {
         surface.dataset.renderer = 'flat';
+        delete surface.dataset.geometry;
+        delete surface.dataset.material;
+        requestDraw();
     }, { signal: resources.signal });
-    reducedBySystem.addEventListener('change', requestDraw, eventOptions);
+    const reducedByHost = new win.MutationObserver(updateMotionPreference);
+    reducedByHost.observe(doc.body, { attributes: true, attributeFilter: ['class'] });
+    reducedBySystem.addEventListener('change', updateMotionPreference, eventOptions);
+    doc.addEventListener('visibilitychange', requestDraw, eventOptions);
     doc.addEventListener('pointermove', event => {
         if (!active || event.pointerType === 'touch' || reduced()) return;
-        pointer = [limit(event.clientX / win.innerWidth * 2 - 1, 1), limit(1 - event.clientY / win.innerHeight * 2, 1)];
+        const x = limit(event.clientX / win.innerWidth * 2 - 1, 1);
+        const y = limit(1 - event.clientY / win.innerHeight * 2, 1);
+        if (x === pointer[0] && y === pointer[1]) return;
+        pointer = [x, y];
         requestDraw();
     }, eventOptions);
     void prepare().catch(error => {
@@ -399,6 +518,7 @@ export function createJewelScene(surface, {
         },
         dispose() {
             resources.abort();
+            reducedByHost.disconnect();
             if (frame) win.cancelAnimationFrame(frame);
             if (gl && program && !gl.isContextLost()) {
                 for (const object of objects) {

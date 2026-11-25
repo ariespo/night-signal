@@ -49,7 +49,7 @@ function addListButton(parent, name, caption, run) {
     return { row, label, button };
 }
 
-function projectMultiple(ui, parent, accessor, isActive, emptyCaption) {
+function projectMultiple(ui, parent, accessor, emptyCaption) {
     let previousField;
     let previousOptions = [];
     let rows = [];
@@ -61,7 +61,6 @@ function projectMultiple(ui, parent, accessor, isActive, emptyCaption) {
     parent.append(list);
 
     ui.watch(() => {
-        if (!isActive()) return;
         const select = accessor();
         const options = Array.from(select?.options ?? []).filter(option => option.value && !option.hidden);
         if (select !== previousField || options.length !== previousOptions.length
@@ -73,21 +72,20 @@ function projectMultiple(ui, parent, accessor, isActive, emptyCaption) {
                 if (select !== accessor() || option.disabled || select.disabled) return;
                 option.selected = !option.selected;
                 emitChange(select);
-                ui.refresh();
             }));
         }
 
-        empty.hidden = options.length > 0;
+        ui.setAttribute(empty, 'hidden', options.length ? '' : null);
         for (const [index, option] of options.entries()) {
             const { label, button } = rows[index];
             if (label.textContent !== option.label) label.textContent = option.label;
             const caption = option.selected ? '开启' : '关闭';
             if (button.textContent !== caption) button.textContent = caption;
-            button.setAttribute('aria-label', `${option.label} · ${caption}`);
-            button.setAttribute('aria-pressed', String(option.selected));
-            button.disabled = option.disabled || select.disabled;
+            ui.setAttribute(button, 'aria-label', `${option.label} · ${caption}`);
+            ui.setAttribute(button, 'aria-pressed', String(option.selected));
+            ui.setAttribute(button, 'disabled', option.disabled || select.disabled ? '' : null);
         }
-    });
+    }, parent);
 }
 
 function addKeywords(ui, parent, label, name, findEntryField) {
@@ -114,14 +112,15 @@ function addKeywords(ui, parent, label, name, findEntryField) {
     let revision = 0;
     ui.watch(() => {
         const field = accessor();
-        row.hidden = !field;
+        ui.setAttribute(row, 'hidden', field ? null : '');
         if (!field || field === pendingField || (field === boundField && doc.activeElement === input)) return;
         boundField = field;
         const value = field.tagName === 'SELECT' ? Array.from(field.selectedOptions, option => option.text).join(', ') : field.value;
         if (input.value !== value) input.value = value;
-    });
+    }, parent);
 
     input.addEventListener('input', () => input.setCustomValidity(''));
+    input.addEventListener('blur', ui.requestRefresh);
     input.addEventListener('change', async () => {
         const field = accessor();
         if (!field) return;
@@ -161,38 +160,51 @@ function addKeywords(ui, parent, label, name, findEntryField) {
             input.setCustomValidity('关键词暂未保存，请重新编辑后重试。');
             input.reportValidity();
         } finally {
-            if (currentRevision === revision) pendingField = null;
+            if (currentRevision === revision) {
+                pendingField = null;
+                ui.requestRefresh();
+            }
         }
     });
 }
 
 export function renderWorldPage(ui) {
     const doc = ui.root.ownerDocument;
+    const win = doc.defaultView;
     const find = selector => ui.source.querySelector(selector);
+    let viewName = 'overview';
     const views = Object.fromEntries(['overview', 'active', 'entries', 'entry', 'filters'].map(name => {
         const view = doc.createElement('div');
         view.dataset.mtWorldView = name;
+        view.hidden = name !== viewName;
         ui.root.append(view);
         return [name, view];
     }));
 
-    let viewName;
     let openedEntry = null;
     let openedBook = '';
     let openedNativeEntry = null;
     let entryCreation = null;
-    const currentBook = () => find('#world_editor_select')?.selectedOptions[0];
+    let bookSelect;
+    let missingTimer;
+    const isEntryView = () => viewName === 'entry' || viewName === 'filters';
+    const currentBook = () => {
+        if (!bookSelect || !ui.source.contains(bookSelect)) bookSelect = find('#world_editor_select');
+        return bookSelect?.selectedOptions[0];
+    };
     const entryList = () => Array.from(ui.source.querySelectorAll('#world_popup_entries_list .world_entry[uid]'));
     const findEntry = () => {
         if (openedEntry === null || currentBook()?.text !== openedBook) return null;
-        return find(`#world_popup_entries_list .world_entry[uid="${doc.defaultView.CSS.escape(openedEntry)}"]`);
+        if (openedNativeEntry?.getAttribute('uid') === openedEntry && ui.source.contains(openedNativeEntry)
+            && openedNativeEntry.closest('#world_popup_entries_list')) return openedNativeEntry;
+        return find(`#world_popup_entries_list .world_entry[uid="${win.CSS.escape(openedEntry)}"]`);
     };
     const findEntryField = selector => findEntry()?.querySelector(selector) ?? null;
 
     function show(name) {
         if (name !== 'entries') entryCreation = null;
         viewName = name;
-        for (const [key, view] of Object.entries(views)) view.hidden = key !== name;
+        for (const [key, view] of Object.entries(views)) ui.setAttribute(view, 'hidden', key === name ? null : '');
         ui.root.scrollTop = 0;
         ui.refresh();
     }
@@ -214,11 +226,10 @@ export function renderWorldPage(ui) {
         run: () => show(name),
         ...(label.startsWith('返回') ? { value: '返回', cue: 'back' } : {}),
     });
-    const bookAction = (parent, label, target, options) => {
-        const row = ui.action(parent, label, () => currentBook()?.value ? find(target) : null, options);
-        ui.watch(() => { row.hidden = !currentBook()?.value; });
-        return row;
-    };
+    const bookAction = (parent, label, target, options) => ui.action(parent, label, target, {
+        shown: () => Boolean(currentBook()?.value),
+        ...options,
+    });
 
     const books = ui.section('书库', views.overview);
     ui.field(books, '编辑中的世界书', '#world_editor_select', { event: 'change', force: true });
@@ -237,7 +248,7 @@ export function renderWorldPage(ui) {
     jump(active, '返回世界书', 'overview');
     const bookSwitches = doc.createElement('div');
     active.append(bookSwitches);
-    projectMultiple(ui, bookSwitches, () => find('#world_info'), () => viewName === 'active', '暂无可启用的世界书。');
+    projectMultiple(ui, bookSwitches, () => find('#world_info'), '暂无可启用的世界书。');
 
     const entries = ui.section('世界书条目', views.entries);
     jump(entries, '返回世界书', 'overview');
@@ -265,7 +276,6 @@ export function renderWorldPage(ui) {
     emptyEntries.textContent = '当前没有条目。';
 
     function renderEntries() {
-        if (viewName !== 'entries') return;
         const selected = currentBook()?.value ? entryList() : [];
         if (entryCreation && currentBook()?.text !== entryCreation.book) entryCreation = null;
         if (entryCreation && selected.length) {
@@ -281,16 +291,16 @@ export function renderWorldPage(ui) {
             list.replaceChildren();
             entryRows = selected.map(entry => addListButton(list, '', '编辑', () => enterEntry(entry)));
         }
-        if (!selected.length) list.append(emptyEntries);
+        if (!selected.length && emptyEntries.parentElement !== list) list.append(emptyEntries);
         for (const [index, entry] of selected.entries()) {
             const title = entry.querySelector('[name="comment"]');
             const label = title?.value.trim() || title?.placeholder || '无标题条目';
             const { label: caption, button } = entryRows[index];
             if (caption.textContent !== label) caption.textContent = label;
-            button.setAttribute('aria-label', `编辑 · ${label}`);
+            ui.setAttribute(button, 'aria-label', `编辑 · ${label}`);
         }
     }
-    ui.watch(renderEntries);
+    ui.watch(renderEntries, entries);
 
     const pageDirection = direction => {
         const control = find(`#world_info_pagination .paginationjs-${direction} a`);
@@ -316,17 +326,18 @@ export function renderWorldPage(ui) {
     ], findEntryField, { event: 'input' });
     const enabled = addListButton(entry, '条目状态', '开启', () => {
         findEntryField('.killSwitch')?.click();
-        ui.refresh();
+        ui.requestRefresh();
     });
     ui.watch(() => {
         const control = findEntryField('.killSwitch');
-        enabled.row.hidden = !control;
+        ui.setAttribute(enabled.row, 'hidden', control ? null : '');
         if (!control) return;
         const on = control.classList.contains('fa-toggle-on');
-        enabled.button.textContent = on ? '开启' : '关闭';
-        enabled.button.setAttribute('aria-label', on ? '条目已开启' : '条目已关闭');
-        enabled.button.setAttribute('aria-pressed', String(on));
-    });
+        const text = on ? '开启' : '关闭';
+        if (enabled.button.textContent !== text) enabled.button.textContent = text;
+        ui.setAttribute(enabled.button, 'aria-label', on ? '条目已开启' : '条目已关闭');
+        ui.setAttribute(enabled.button, 'aria-pressed', String(on));
+    }, entry);
 
     const trigger = ui.section('关键词', views.entry);
     addKeywords(ui, trigger, '主要关键词', 'key', findEntryField);
@@ -370,25 +381,25 @@ export function renderWorldPage(ui) {
     ], findEntryField, { event: 'input', force: true });
 
     const characters = ui.section('角色与标签', views.filters);
-    projectMultiple(ui, characters, () => findEntryField('[name="characterFilter"]'), () => viewName === 'filters', '暂无角色与标签。');
+    projectMultiple(ui, characters, () => findEntryField('[name="characterFilter"]'), '暂无角色与标签。');
     const generation = ui.section('生成触发类型', views.filters);
-    projectMultiple(ui, generation, () => findEntryField('[name="triggers"]'), () => viewName === 'filters', '暂无筛选项。');
+    projectMultiple(ui, generation, () => findEntryField('[name="triggers"]'), '暂无筛选项。');
 
-    let missingSince = null;
     ui.watch(() => {
-        if (viewName !== 'entry' && viewName !== 'filters') return;
+        if (!isEntryView()) return;
         const current = findEntry();
         if (current) {
-            missingSince = null;
+            win.clearTimeout(missingTimer);
+            missingTimer = undefined;
             if (current !== openedNativeEntry) openBackingEntry(current);
             return;
         }
-        missingSince ??= doc.defaultView.performance.now();
-        if (doc.defaultView.performance.now() - missingSince > 400) {
-            missingSince = null;
+        missingTimer ??= win.setTimeout(() => {
+            missingTimer = undefined;
+            if (ui.source.dataset.mtDiscMode !== 'disc' || !isEntryView() || findEntry()) return;
             openedEntry = null;
             show('entries');
-        }
+        }, 400);
     });
-    show('overview');
+    return () => win.clearTimeout(missingTimer);
 }

@@ -62,7 +62,7 @@ body.mt-stage-open [data-mt-native-panel] :is(button, input, select, textarea, .
     outline-offset: 2px;
 }
 
-body.mt-stage-open:not(.reduced-motion) [data-mt-native-panel][data-mt-entry-motion="opening"] > * {
+body.mt-stage-open:not(.reduced-motion) [data-mt-native-panel][data-mt-entry-motion="opening"] > :not(.mt-disc-page) {
     animation: mt-drawer-contents-in 400ms cubic-bezier(.19, .72, .25, 1) both;
 }
 

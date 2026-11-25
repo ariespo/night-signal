@@ -26,7 +26,7 @@ function renderList(ui, parent, readItems, emptyText) {
 
     ui.watch(() => {
         const items = readItems();
-        empty.hidden = items.length > 0;
+        ui.setAttribute(empty, 'hidden', items.length ? '' : null);
         const keys = new Set(items.map(item => item.key));
         for (const [key, row] of rows) {
             if (keys.has(key)) continue;
@@ -52,20 +52,19 @@ function renderList(ui, parent, readItems, emptyText) {
                     if (!row.item.node.isConnected) return;
                     if (row.item.activate) row.item.activate(row.item.node);
                     else row.item.node.click();
-                    ui.refresh();
+                    ui.requestRefresh();
                 });
                 rows.set(item.key, row);
             }
             row.item = item;
             if (row.name.textContent !== item.name) row.name.textContent = item.name;
             if (row.value.textContent !== item.value) row.value.textContent = item.value;
-            if (item.selected) row.button.setAttribute('aria-current', 'true');
-            else row.button.removeAttribute('aria-current');
+            ui.setAttribute(row.button, 'aria-current', item.selected ? 'true' : null);
             if (row.button === position) position = position.nextElementSibling;
             else list.insertBefore(row.button, position);
         }
         if (focused && list.contains(focused) && doc.activeElement !== focused) focused.focus({ preventScroll: true });
-    });
+    }, parent);
 }
 
 function addPagination(ui, parent, selector) {
@@ -189,6 +188,13 @@ function renderCharacters(ui) {
     const editPage = doc.createElement('div');
     const groupPage = doc.createElement('div');
     root.append(listPage, editPage, groupPage);
+    ui.watch(() => {
+        const edit = shown(source.querySelector('#rm_ch_create_block'), source);
+        const groupOpen = !edit && shown(source.querySelector('#rm_group_chats_block'), source);
+        ui.setAttribute(listPage, 'hidden', edit || groupOpen ? '' : null);
+        ui.setAttribute(editPage, 'hidden', edit ? null : '');
+        ui.setAttribute(groupPage, 'hidden', groupOpen ? null : '');
+    });
 
     const filters = ui.section('角色列表', listPage);
     ui.field(filters, '搜索角色', '#character_search_bar', { event: 'input' });
@@ -240,14 +246,6 @@ function renderCharacters(ui) {
     ui.field(candidates, '搜索可添加角色', '#rm_group_filter', { event: 'input', allowHidden: true });
     addPagination(ui, candidates, '#rm_group_add_members_pagination');
     renderList(ui, candidates, groupMembers('#rm_group_add_members', 'add'), '没有可添加的角色');
-
-    ui.watch(() => {
-        const edit = shown(source.querySelector('#rm_ch_create_block'), source);
-        const groupOpen = !edit && shown(source.querySelector('#rm_group_chats_block'), source);
-        listPage.hidden = edit || groupOpen;
-        editPage.hidden = !edit;
-        groupPage.hidden = !groupOpen;
-    });
 }
 
 export function renderCatalogPage(ui) {

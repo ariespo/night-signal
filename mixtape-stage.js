@@ -18,6 +18,9 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     decor.setAttribute('aria-hidden', 'true');
     const fallback = doc.createElement('div');
     fallback.className = 'mt-scene-fallback';
+    const reflection = doc.createElement('span');
+    reflection.className = 'mt-scene-reflection';
+    fallback.append(reflection);
     for (const className of ['mt-scene-sticker', 'mt-scene-barcode', 'mt-scene-shop']) {
         const sticker = doc.createElement('i');
         sticker.className = className;
@@ -55,6 +58,8 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     const reduce = win.matchMedia('(prefers-reduced-motion: reduce)');
     let scene;
     let panel;
+    let content;
+    let caseBox;
     let fromTitle = false;
     let titleTimer;
     let drag;
@@ -62,30 +67,57 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     let navFocused = false;
 
     function readBox() {
-        const bounds = panel?.node.getBoundingClientRect();
-        if (!bounds) return null;
+        const node = panel?.node;
+        if (!node) return null;
+        const bounds = node.getBoundingClientRect();
         const inset = Math.min(bounds.width * 0.044, 56);
         const width = Math.min(win.innerWidth - 4, bounds.width + inset * 2);
         const top = Math.max(0, bounds.top - Math.min(22, win.innerHeight * 0.026));
         const available = win.innerHeight - top;
-        const height = panel.node.dataset.mtDiscMode === 'disc'
+        const height = node.dataset.mtDiscMode === 'disc'
             ? available + 8
             : Math.min(available + 8, Math.max(width * 0.87, bounds.height + 46));
-        return {
+        const box = {
             x: Math.min(win.innerWidth - width - 2, Math.max(2, bounds.left + bounds.width / 2 - width / 2)),
             y: top,
             width,
             height,
         };
+        if (content && !content.hidden) {
+            // Use the drawer's layout coordinates so the previous frame cannot move the pivot.
+            const x = box.x + width / 2 - bounds.left - node.clientLeft - content.offsetLeft;
+            const y = top + height / 2 - bounds.top - node.clientTop - content.offsetTop;
+            content.style.transformOrigin = `${x}px ${y}px`;
+        }
+        return box;
     }
 
     function refreshBounds() {
-        scene?.layout(readBox());
+        caseBox = readBox();
+        scene?.layout(caseBox);
     }
 
     const boxObserver = new win.ResizeObserver(refreshBounds);
+    const modeObserver = new win.MutationObserver(refreshBounds);
     win.addEventListener('resize', refreshBounds, listen);
     win.visualViewport?.addEventListener('resize', refreshBounds, listen);
+
+    function projectCase({ box, lens, pitch, yaw, roll, scale, lift, opacity, lightX, lightY }) {
+        // The browser's y axis points down. The depth is the front of the original case mesh.
+        const depth = box.width / 2 * 0.045274;
+        const transform = `translateY(${lift}px) perspective(${lens}px) rotateZ(${-roll}rad) rotateY(${yaw}rad) `
+            + `rotateX(${-pitch}rad) scale3d(${scale},${scale},${scale}) translateZ(${depth}px)`;
+        if (content && !content.hidden) {
+            content.style.transform = transform;
+            content.style.opacity = opacity;
+        }
+        if (decor.dataset.renderer === 'flat') {
+            fallback.style.transform = transform;
+            fallback.style.opacity = opacity;
+            reflection.style.setProperty('--mt-reflection-x', `${-yaw * 245 + lightX * 8}%`);
+            reflection.style.setProperty('--mt-reflection-y', `${-pitch * 230 - lightY * 8}%`);
+        }
+    }
 
     function refreshSound() {
         const enabled = isSoundOn();
@@ -96,7 +128,10 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     function panelChanged(next) {
         const old = panel;
         panel = next;
+        content = next?.node.querySelector(':scope > .mt-disc-page');
+        caseBox = null;
         boxObserver.disconnect();
+        modeObserver.disconnect();
         controls.hidden = !next;
         doc.body.classList.toggle('mt-stage-open', !!next);
         for (const [id, button] of rail) button.setAttribute('aria-pressed', String(id === next?.id));
@@ -117,13 +152,15 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         }
 
         win.clearTimeout(titleTimer);
-        if (!scene) scene = createJewelScene(decor, { resolveAsset });
+        if (!scene) scene = createJewelScene(decor, { resolveAsset, onPose: projectCase });
         const order = [...rail.keys()];
         const direction = old ? Math.sign(order.indexOf(next.id) - order.indexOf(old.id)) : 0;
         const animation = old ? 'switching' : 'opening';
         next.node.dataset.mtEntryMotion = animation;
         boxObserver.observe(next.node);
-        scene.show(readBox(), direction);
+        modeObserver.observe(next.node, { attributes: true, attributeFilter: ['data-mt-disc-mode'] });
+        caseBox = readBox();
+        scene.show(caseBox, direction);
         audio.setSettingsActive(true);
         audio.setAmbient(true);
         audio.cue(old ? 'tab' : fromTitle ? 'settings-open' : 'open');
@@ -212,7 +249,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
             if (event.button !== 0 || drag) return;
             if (target === decor) {
                 suppressBackdropClick = false;
-                const box = readBox();
+                const box = caseBox;
                 if (!box || event.clientX < box.x || event.clientX > box.x + box.width
                     || event.clientY < box.y || event.clientY > box.y + box.height) return;
             }
@@ -259,6 +296,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
             win.clearTimeout(titleTimer);
             disconnectGamepad();
             boxObserver.disconnect();
+            modeObserver.disconnect();
             panels.dispose();
             scene?.dispose();
             decor.remove();

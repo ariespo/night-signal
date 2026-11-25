@@ -4,6 +4,22 @@ import { renderConfigurationPage } from './mixtape-configuration-pages.js';
 import { renderCatalogPage } from './mixtape-catalog-pages.js';
 
 const catalogs = new Set(['Backgrounds', 'rm_extensions_block', 'PersonaManagement', 'right-nav-panel']);
+const backingChanges = {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: [
+        'class', 'style', 'hidden', 'disabled', 'aria-disabled', 'readonly', 'checked',
+        'selected', 'value', 'label', 'min', 'max', 'step', 'placeholder', 'title', 'type',
+    ],
+};
+
+function setAttribute(element, name, value) {
+    if (element.getAttribute(name) === value) return;
+    if (value === null) element.removeAttribute(name);
+    else element.setAttribute(name, value);
+}
 
 export function mountDiscPage(panel, onCue) {
     const source = panel.node;
@@ -11,11 +27,14 @@ export function mountDiscPage(panel, onCue) {
     const win = doc.defaultView;
     const zh = doc.documentElement.lang.toLowerCase().startsWith('zh');
     const msg = (cn, en) => zh ? cn : en;
-    const observers = new Set();
+    const observers = new Map();
     const backing = new Map();
+    const listeners = new win.AbortController();
     let disposeNative;
     let native = false;
     let discScrollTop = 0;
+    let refreshFrame = 0;
+    let visibility;
 
     function element(tag, cls, label) {
         const el = doc.createElement(tag);
@@ -43,24 +62,63 @@ export function mountDiscPage(panel, onCue) {
     article.append(header, root, footer);
     source.prepend(article, back);
 
+    const nativeObserver = new win.MutationObserver(records => {
+        if (records.some(record => record.target === source)) refreshBacking();
+        requestRefresh();
+    });
+
+    function restoreBacking(child, wasInert) {
+        child.removeAttribute('data-mt-backing');
+        child.inert = wasInert;
+    }
+
     function refreshBacking() {
+        for (const [child, wasInert] of backing) {
+            if (child.parentElement === source) continue;
+            restoreBacking(child, wasInert);
+            backing.delete(child);
+        }
         for (const child of source.children) {
             if (child === article || child === back || backing.has(child)) continue;
             backing.set(child, child.inert);
             child.dataset.mtBacking = '';
             child.inert = !native || child.inert;
         }
+        // The article is animated and writes its own DOM. Observe only native controls.
+        nativeObserver.disconnect();
+        nativeObserver.observe(source, { childList: true });
+        for (const child of backing.keys()) nativeObserver.observe(child, backingChanges);
     }
 
-    function watch(callback) {
-        observers.add(callback);
-        callback();
-        return () => observers.delete(callback);
+    function watch(callback, scope = root) {
+        if (!observers.has(scope)) observers.set(scope, new Set());
+        observers.get(scope).add(callback);
+    }
+
+    function requestRefresh() {
+        if (native || doc.hidden || refreshFrame || listeners.signal.aborted) return;
+        refreshFrame = win.requestAnimationFrame(() => {
+            refreshFrame = 0;
+            refresh();
+        });
     }
 
     function refresh() {
-        if (native || doc.hidden) return;
-        for (const callback of [...observers]) callback();
+        if (native || doc.hidden || listeners.signal.aborted) return;
+        if (visibility) return requestRefresh();
+        win.cancelAnimationFrame(refreshFrame);
+        refreshFrame = 0;
+        visibility = new WeakMap();
+        try {
+            for (const [scope, callbacks] of observers) {
+                if (!article.contains(scope)) observers.delete(scope);
+                else if (!scope.closest('[hidden]')) {
+                    for (const callback of callbacks) callback();
+                }
+            }
+        } finally {
+            visibility = undefined;
+        }
     }
 
     function setNative(show) {
@@ -103,7 +161,12 @@ export function mountDiscPage(panel, onCue) {
 
     function isShown(node) {
         for (let el = node; el && el !== source; el = el.parentElement) {
-            if (el.hidden || win.getComputedStyle(el).display === 'none') return false;
+            let shown = visibility.get(el);
+            if (shown === undefined) {
+                shown = !el.hidden && win.getComputedStyle(el).display !== 'none';
+                visibility.set(el, shown);
+            }
+            if (!shown) return false;
         }
         return true;
     }
@@ -134,7 +197,7 @@ export function mountDiscPage(panel, onCue) {
             const node = resolve(target);
             if (!node || disabled(node) || node.readOnly) return;
             callback(node);
-            refresh();
+            requestRefresh();
         }
 
         function rotator(kind) {
@@ -191,9 +254,9 @@ export function mountDiscPage(panel, onCue) {
                     : (selected?.label || '–');
                 const displayed = options.format ? options.format(text, node) : text;
                 if (value.textContent !== displayed) value.textContent = displayed;
-                row.setAttribute('aria-label', `${label} · ${displayed}`);
-                previous.setAttribute('aria-disabled', String(candidate(node, -1) < 0));
-                next.setAttribute('aria-disabled', String(candidate(node, 1) < 0));
+                setAttribute(row, 'aria-label', `${label} · ${displayed}`);
+                setAttribute(previous, 'aria-disabled', String(candidate(node, -1) < 0));
+                setAttribute(next, 'aria-disabled', String(candidate(node, 1) < 0));
             };
         }
 
@@ -229,34 +292,36 @@ export function mountDiscPage(panel, onCue) {
                     if (!meter) onCue?.('confirm');
                 });
             });
-            input.addEventListener('blur', refresh);
+            input.addEventListener('blur', requestRefresh);
             return node => {
                 if (kind === 'number' || meter) {
-                    input.min = node.getAttribute('min') ?? '';
-                    input.max = node.getAttribute('max') ?? '';
-                    input.step = node.getAttribute('step') ?? 'any';
+                    setAttribute(input, 'min', node.getAttribute('min') ?? '');
+                    setAttribute(input, 'max', node.getAttribute('max') ?? '');
+                    setAttribute(input, 'step', node.getAttribute('step') ?? 'any');
                 }
-                input.disabled = disabled(node);
-                input.readOnly = node.readOnly;
-                input.placeholder = node.placeholder ?? '';
-                if (doc.activeElement !== input || meter) input.value = node.value;
+                setAttribute(input, 'disabled', disabled(node) ? '' : null);
+                setAttribute(input, 'readonly', node.readOnly ? '' : null);
+                setAttribute(input, 'placeholder', node.placeholder ?? '');
+                if ((doc.activeElement !== input || meter) && input.value !== node.value) input.value = node.value;
                 if (meter) {
                     const min = Number(input.min || 0);
                     const max = Number(input.max || 100);
                     const percent = Math.min(100, Math.max(0, (Number(node.value) - min) / Math.max(max - min, 1) * 100));
-                    meter.style.setProperty('--mt-disc-fill', `${percent}%`);
-                    valueLabel.textContent = options.format?.(node.value, node) ?? node.value;
+                    const fill = `${percent}%`;
+                    if (meter.style.getPropertyValue('--mt-disc-fill') !== fill) meter.style.setProperty('--mt-disc-fill', fill);
+                    const display = options.format?.(node.value, node) ?? node.value;
+                    if (valueLabel.textContent !== display) valueLabel.textContent = display;
                 }
             };
         }
 
         function sync() {
             if (!article.contains(row)) {
-                observers.delete(sync);
+                observers.get(parent)?.delete(sync);
                 return;
             }
             const node = resolve(target);
-            row.hidden = !node || (!(options.force || options.allowHidden) && !isShown(node));
+            setAttribute(row, 'hidden', !node || (!(options.force || options.allowHidden) && !isShown(node)) ? '' : null);
             if (row.hidden) return;
             const kind = options.mode ?? (node.localName === 'select' ? 'select' : node.localName === 'textarea' ? 'textarea' : node.type);
             if (mode !== kind) {
@@ -266,7 +331,7 @@ export function mountDiscPage(panel, onCue) {
             }
             syncWidget(node);
         }
-        watch(sync);
+        watch(sync, parent);
         return row;
     }
 
@@ -282,29 +347,42 @@ export function mountDiscPage(panel, onCue) {
             else node?.click();
             options.after?.();
             onCue?.(options.cue ?? 'confirm');
-            refresh();
+            requestRefresh();
         });
         function sync() {
             if (!article.contains(row)) {
-                observers.delete(sync);
+                observers.get(parent)?.delete(sync);
                 return;
             }
             const node = resolve(target);
-            row.hidden = !options.run && (!node || (!options.force && !isShown(node)));
-            control.disabled = Boolean(!options.run && node && disabled(node));
+            const shown = options.shown?.() ?? (options.run || (node && (options.force || isShown(node))));
+            setAttribute(row, 'hidden', shown ? null : '');
+            setAttribute(control, 'disabled', !options.run && node && disabled(node) ? '' : null);
             const text = (typeof options.value === 'function' ? options.value() : options.value) ?? msg('打开', 'Open');
             if (control.textContent !== text) control.textContent = text;
         }
-        watch(sync);
+        watch(sync, parent);
         return row;
     }
 
-    const ui = { root, source, section, field, action, watch, refresh, showNative: () => setNative(true), cue: onCue };
+    const ui = { root, source, section, field, action, watch, refresh, requestRefresh, setAttribute, showNative: () => setNative(true), cue: onCue };
     source.dataset.mtDiscMode = 'disc';
     refreshBacking();
-    const childObserver = new win.MutationObserver(refreshBacking);
-    childObserver.observe(source, { childList: true });
-    const timer = win.setInterval(refresh, 220);
+    const nativeInput = event => {
+        if (!article.contains(event.target) && event.target !== back) requestRefresh();
+    };
+    const capture = { capture: true, signal: listeners.signal };
+    source.addEventListener('input', nativeInput, capture);
+    source.addEventListener('change', nativeInput, capture);
+    doc.addEventListener('visibilitychange', requestRefresh, { signal: listeners.signal });
+    const jquerySource = win.jQuery?.(source);
+    const jqueryEvents = 'input.nightSignalDisc change.nightSignalDisc';
+    const jqueryChange = event => {
+        if (!event.originalEvent) nativeInput(event);
+    };
+    jquerySource?.on(jqueryEvents, jqueryChange);
+    // Some host scripts assign control properties without emitting an event.
+    const timer = win.setInterval(refresh, 1500);
     more.addEventListener('click', () => setNative(true));
     back.addEventListener('click', () => setNative(false));
     article.addEventListener('focusin', event => {
@@ -331,16 +409,18 @@ export function mountDiscPage(panel, onCue) {
     });
 
     const render = source.id === 'WorldInfo' ? renderWorldPage : catalogs.has(source.id) ? renderCatalogPage : renderConfigurationPage;
-    render(ui);
+    const disposePage = render(ui);
+    refresh();
 
     return () => {
-        disposeNative?.();
+        listeners.abort();
+        jquerySource?.off(jqueryEvents, jqueryChange);
+        nativeObserver.disconnect();
+        win.cancelAnimationFrame(refreshFrame);
         win.clearInterval(timer);
-        childObserver.disconnect();
-        for (const [child, wasInert] of backing) {
-            child.removeAttribute('data-mt-backing');
-            child.inert = wasInert;
-        }
+        disposePage?.();
+        disposeNative?.();
+        for (const [child, wasInert] of backing) restoreBacking(child, wasInert);
         delete source.dataset.mtDiscMode;
         article.remove();
         back.remove();

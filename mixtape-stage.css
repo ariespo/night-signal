@@ -43,6 +43,12 @@ body.night-signal-theme {
     z-index: 4000;
     pointer-events: auto;
     touch-action: none;
+}
+
+.mt-scene-layer::before {
+    position: absolute;
+    inset: 0;
+    content: "";
     background: #090708;
 }
 
@@ -68,70 +74,73 @@ body.night-signal-theme {
     width: var(--mt-scene-width, 68vw);
     height: var(--mt-scene-height, 82dvh);
     background: url("./assets/mixtape/jewel-case.webp") center / 100% 100% no-repeat;
-    transform-origin: 54% 64%;
     pointer-events: none;
 }
 
-.mt-scene-fallback::before {
+.mt-scene-reflection {
     position: absolute;
     inset: 0;
+}
+
+.mt-scene-reflection::before,
+.mt-scene-reflection::after {
+    position: absolute;
     content: "";
-    background:
-        radial-gradient(ellipse 26% 16% at 4% 5%, rgb(255 216 189 / 62%), transparent),
-        radial-gradient(ellipse 15% 28% at 96% 71%, rgb(255 190 153 / 26%), transparent);
-    mask: url("./assets/mixtape/jewel-case.webp") center / 100% 100%;
-    mix-blend-mode: screen;
+    will-change: transform;
+}
+
+/* Clamp both highlights inside the cover without clipping a full-size layer. */
+.mt-scene-reflection::before {
+    inset: 4% auto auto 2%;
+    width: 32%;
+    height: 23%;
+    transform: translate3d(clamp(-4%, var(--mt-reflection-x, 0%), 95%), clamp(-13%, var(--mt-reflection-y, 0%), 75%), 0);
+    background: radial-gradient(ellipse at center, rgb(255 215 184 / 61%), rgb(255 188 145 / 22%) 33%, transparent 70%);
+}
+
+.mt-scene-reflection::after {
+    inset: auto 2% 5% auto;
+    width: 20%;
+    height: 34%;
+    transform: translate3d(clamp(-90%, var(--mt-reflection-x, 0%), 8%), clamp(-60%, var(--mt-reflection-y, 0%), 14%), 0);
+    background: radial-gradient(ellipse at center, rgb(255 207 175 / 38%), transparent 70%);
 }
 
 .mt-scene-fallback > i {
     position: absolute;
     display: block;
+    transform: translate(-50%, -50%);
     background-position: center;
     background-size: contain;
     background-repeat: no-repeat;
 }
 
 .mt-scene-sticker {
-    inset: 10% 16% auto auto;
+    top: 19%;
+    left: 76.5%;
     width: 13.5%;
     aspect-ratio: 1;
     background-image: url("./assets/mixtape/hot-stuff.webp");
 }
 
 .mt-scene-barcode {
-    inset: auto auto 5% 11%;
+    top: 89.5%;
+    left: 21.5%;
     width: 21%;
     aspect-ratio: 294 / 132;
     background-image: url("./assets/mixtape/address-label.webp");
 }
 
 .mt-scene-shop {
-    inset: auto auto 3% 33%;
-    width: 23%;
+    top: 93%;
+    left: 44.5%;
+    width: 23.3%;
     aspect-ratio: 326 / 78;
     background-image: url("./assets/mixtape/hot-shop.webp");
 }
 
-.mt-scene-layer[data-motion="opening"] .mt-scene-fallback {
-    animation: mt-case-in 520ms cubic-bezier(0.19, 0.72, 0.25, 1) both;
-}
-
-.mt-scene-layer[data-motion="switching"] .mt-scene-fallback {
-    animation: mt-case-switch 315ms ease-out both;
-}
-
-.mt-scene-layer[data-motion="closing"] {
+.mt-scene-layer[data-motion="closing"]::before {
     animation: mt-scene-out 360ms cubic-bezier(0.38, 0, 0.64, 1) both;
-}
-
-@keyframes mt-case-in {
-    from { transform: perspective(1400px) translateY(48px) rotateX(-15deg) rotateY(22deg) scale(0.8); opacity: 0; }
-    to { transform: none; opacity: 1; }
-}
-
-@keyframes mt-case-switch {
-    from { transform: perspective(1400px) rotateY(9deg) rotateZ(0.9deg) scale(0.99); }
-    to { transform: none; }
 }
 
 @keyframes mt-scene-out {
@@ -265,8 +274,7 @@ body.night-signal-theme {
     }
 }
 
-body.reduced-motion .mt-scene-layer,
-body.reduced-motion .mt-scene-fallback {
+body.reduced-motion .mt-scene-layer::before {
     animation: none !important;
 }
 
@@ -275,6 +283,6 @@ body.reduced-motion .mt-stage-controls > .mt-stage-rotate {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .mt-scene-layer, .mt-scene-fallback { animation: none !important; }
+    .mt-scene-layer::before { animation: none !important; }
     .mt-stage-controls > .mt-stage-rotate { display: none; }
 }

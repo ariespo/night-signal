@@ -17,7 +17,8 @@ body.mt-stage-open :is(#left-nav-panel, #right-nav-panel, .drawer-content).openD
     border-radius: 0;
     background: none;
     box-shadow: none;
-    overflow: hidden;
+    overflow: visible;
+    pointer-events: none;
 }
 
 [data-mt-disc-mode="disc"] > [data-mt-backing] {
@@ -39,6 +40,7 @@ body.mt-stage-open [data-mt-native-panel] .mt-disc-page {
     grid-template-rows: auto minmax(0, 1fr) auto;
     box-sizing: border-box;
     block-size: 100%;
+    pointer-events: auto;
     color: var(--mt-disc-text);
     font: 600 clamp(1rem, 1.58vw, 1.65rem)/1.27 var(--mt-panel-face, system-ui);
     text-shadow: 0 1px 3px #22130eb3;
@@ -254,8 +256,9 @@ body.mt-stage-open [data-mt-native-panel] .mt-disc-heading {
         --mt-disc-row-height: 2.55rem;
         --mt-disc-inset-top: 1.65rem;
         padding: var(--mt-disc-inset-top) 0.75rem 0;
-        background: rgb(14 11 11 / 48%);
     }
+
+    body.mt-stage-open [data-mt-native-panel] .mt-disc-page { background: rgb(14 11 11 / 48%); }
 
     .mt-disc-row { column-gap: 0.45rem; }
     .mt-disc-value { font-size: 0.9em; }
