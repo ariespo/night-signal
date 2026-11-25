@@ -260,14 +260,16 @@ export function createJewelScene(surface, {
     const reducedBySystem = win.matchMedia('(prefers-reduced-motion: reduce)');
     const reduced = () => reducedBySystem.matches || doc.body.classList.contains('reduced-motion');
     let wasReduced = reduced();
-    const gl = getHardwareContext(canvas);
     const objects = [];
+    let gl;
     let program;
     let coverSurface;
     let uniforms;
     let attributes;
     let frame = 0;
     let active = false;
+    let artworkVisible = true;
+    let artworkRequested = false;
     let box;
     let region;
     const meshExtent = [1, 1, 0.002];
@@ -276,6 +278,7 @@ export function createJewelScene(surface, {
     let tilt = [0, 0];
     let pointer = [0, 0];
     let manual = [0, 0];
+    const deviceTilt = [0, 0];
 
     function setPhase(next) {
         surface.dataset.motion = next;
@@ -370,7 +373,10 @@ export function createJewelScene(surface, {
                 if (!active) surface.hidden = true;
             }
         }
-        const target = active && !still ? [-pointer[1] * 0.035 + manual[0], pointer[0] * 0.06 + manual[1]] : [0, 0];
+        const target = active && !still ? [
+            limit(-pointer[1] * 0.035 + manual[0] + deviceTilt[0], 0.255),
+            limit(pointer[0] * 0.06 + manual[1] + deviceTilt[1], 0.38),
+        ] : [0, 0];
         for (let axis = 0; axis < 2; axis++) {
             if (still || Math.abs(tilt[axis] - target[axis]) < 0.0004) tilt[axis] = target[axis];
             else tilt[axis] = interpolate(tilt[axis], target[axis], 0.22);
@@ -381,7 +387,7 @@ export function createJewelScene(surface, {
             lightX: still ? 0 : pointer[0], lightY: still ? 0 : pointer[1],
         };
         onPose?.(state);
-        render(state);
+        if (artworkVisible) render(state);
         if (transition || tilt.some((angle, axis) => Math.abs(angle - target[axis]) > 0.0004)) requestDraw();
     }
 
@@ -465,6 +471,15 @@ export function createJewelScene(surface, {
         requestDraw();
     }
 
+    function prepareArtwork() {
+        if (!active || !artworkVisible || artworkRequested) return;
+        artworkRequested = true;
+        gl = getHardwareContext(canvas);
+        void prepare().catch(error => {
+            if (!resources.signal.aborted) console.warn('[Night Signal] Jewel case scene unavailable', error);
+        });
+    }
+
     canvas.addEventListener('webglcontextlost', () => {
         surface.dataset.renderer = 'flat';
         delete surface.dataset.geometry;
@@ -483,10 +498,6 @@ export function createJewelScene(surface, {
         pointer = [x, y];
         requestDraw();
     }, eventOptions);
-    void prepare().catch(error => {
-        if (!resources.signal.aborted) console.warn('[Night Signal] Jewel case scene unavailable', error);
-    });
-
     return {
         layout,
         show(targetBox, direction = 0) {
@@ -494,6 +505,7 @@ export function createJewelScene(surface, {
             const entering = !active;
             active = true;
             surface.hidden = false;
+            prepareArtwork();
             if (!entering && direction && !reduced()) {
                 pose.yaw += Math.sign(direction) * 0.17;
                 pose.roll += Math.sign(direction) * 0.028;
@@ -505,6 +517,7 @@ export function createJewelScene(surface, {
             if (!active) return;
             active = false;
             manual = [0, 0];
+            deviceTilt.fill(0);
             animate('closing', hidden);
         },
         rotate(dx, dy) {
@@ -514,6 +527,20 @@ export function createJewelScene(surface, {
         },
         resetRotation() {
             manual = [0, 0];
+            requestDraw();
+        },
+        setDeviceTilt(pitch, yaw) {
+            if (!Number.isFinite(pitch) || !Number.isFinite(yaw)) return;
+            if (pitch === deviceTilt[0] && yaw === deviceTilt[1]) return;
+            deviceTilt[0] = pitch;
+            deviceTilt[1] = yaw;
+            requestDraw();
+        },
+        setArtworkVisible(visible) {
+            if (artworkVisible === visible) return;
+            artworkVisible = visible;
+            if (!artworkVisible) return;
+            prepareArtwork();
             requestDraw();
         },
         dispose() {

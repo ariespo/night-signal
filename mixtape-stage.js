@@ -1,6 +1,16 @@
 import { connectGamepad } from './mixtape-controls.js';
+import { createDeviceOrientation } from './mixtape-device-orientation.js';
 import { mountPanelTheme, panelEntries } from './mixtape-panels.js';
 import { createJewelScene } from './mixtape-scene.js';
+
+const sensorLabels = {
+    prompt: ['启用体感', '允许浏览器读取手机方向以旋转光盘盒'],
+    prompting: ['等待授权', '在浏览器的权限提示中允许访问方向传感器'],
+    listening: ['校准体感', '以手机当前的姿势作为旋转起点'],
+    active: ['校准体感', '以手机当前的姿势作为旋转起点'],
+    denied: ['体感未授权', '在浏览器中允许访问方向传感器后再试'],
+    insecure: ['体感需 HTTPS', '通过 HTTPS 打开酒馆后即可使用手机体感旋转'],
+};
 
 function createButton(doc, label, className = '') {
     const button = doc.createElement('button');
@@ -48,9 +58,11 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     returnButton.prepend(key);
     const rotate = createButton(doc, '旋转光盘盒', 'mt-stage-rotate');
     rotate.title = '拖动或使用方向键旋转光盘盒，双击复位';
+    const sensor = createButton(doc, '', 'mt-stage-sensor');
+    sensor.hidden = true;
     const sound = createButton(doc, '声音关', 'mt-stage-sound');
     sound.setAttribute('aria-pressed', 'false');
-    controls.append(nav, returnButton, rotate, sound);
+    controls.append(nav, returnButton, rotate, sensor, sound);
     doc.body.append(decor, controls);
 
     const lifecycle = new AbortController();
@@ -66,10 +78,32 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     let suppressBackdropClick = false;
     let navFocused = false;
 
+    function showSensorStatus(status) {
+        const label = sensorLabels[status];
+        sensor.hidden = !label;
+        if (!label) return;
+        [sensor.textContent, sensor.title] = label;
+        sensor.disabled = status === 'prompting' || status === 'insecure';
+    }
+
+    const orientation = createDeviceOrientation(win, {
+        onTilt: (pitch, yaw) => scene?.setDeviceTilt(pitch, yaw),
+        onStatus: showSensorStatus,
+    });
+    showSensorStatus(orientation.status);
+
     function readBox() {
         const node = panel?.node;
         if (!node) return null;
         const bounds = node.getBoundingClientRect();
+        const articleX = bounds.left + node.clientLeft + (content?.offsetLeft ?? 0);
+        const articleY = bounds.top + node.clientTop + (content?.offsetTop ?? 0);
+        const pauseArt = decor.dataset.artwork === 'character-pause' && content?.querySelector(':scope > .mt-character-disc');
+        if (pauseArt?.offsetWidth && pauseArt.offsetHeight) {
+            const { offsetLeft, offsetTop, offsetWidth, offsetHeight } = pauseArt;
+            content.style.transformOrigin = `${offsetLeft + offsetWidth / 2}px ${offsetTop + offsetHeight / 2}px`;
+            return { x: articleX + offsetLeft, y: articleY + offsetTop, width: offsetWidth, height: offsetHeight };
+        }
         const inset = Math.min(bounds.width * 0.044, 56);
         const width = Math.min(win.innerWidth - 4, bounds.width + inset * 2);
         const top = Math.max(0, bounds.top - Math.min(22, win.innerHeight * 0.026));
@@ -85,8 +119,8 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         };
         if (content && !content.hidden) {
             // Use the drawer's layout coordinates so the previous frame cannot move the pivot.
-            const x = box.x + width / 2 - bounds.left - node.clientLeft - content.offsetLeft;
-            const y = top + height / 2 - bounds.top - node.clientTop - content.offsetTop;
+            const x = box.x + width / 2 - articleX;
+            const y = top + height / 2 - articleY;
             content.style.transformOrigin = `${x}px ${y}px`;
         }
         return box;
@@ -97,8 +131,18 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         scene?.layout(caseBox);
     }
 
+    function refreshArtwork() {
+        const node = panel?.node;
+        const pause = node?.dataset.mtDiscMode === 'disc' && node.hasAttribute('data-mt-character-pause');
+        decor.dataset.artwork = pause ? 'character-pause' : 'settings';
+        scene?.setArtworkVisible(!pause);
+    }
+
     const boxObserver = new win.ResizeObserver(refreshBounds);
-    const modeObserver = new win.MutationObserver(refreshBounds);
+    const modeObserver = new win.MutationObserver(() => {
+        refreshArtwork();
+        refreshBounds();
+    });
     win.addEventListener('resize', refreshBounds, listen);
     win.visualViewport?.addEventListener('resize', refreshBounds, listen);
 
@@ -111,7 +155,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
             content.style.transform = transform;
             content.style.opacity = opacity;
         }
-        if (decor.dataset.renderer === 'flat') {
+        if (decor.dataset.renderer === 'flat' && decor.dataset.artwork !== 'character-pause') {
             fallback.style.transform = transform;
             fallback.style.opacity = opacity;
             reflection.style.setProperty('--mt-reflection-x', `${-yaw * 245 + lightX * 8}%`);
@@ -137,6 +181,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         for (const [id, button] of rail) button.setAttribute('aria-pressed', String(id === next?.id));
 
         if (!next) {
+            orientation.setActive(false);
             scene?.hide();
             if (old) audio.cue('close');
             audio.setAmbient(false);
@@ -153,14 +198,16 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
 
         win.clearTimeout(titleTimer);
         if (!scene) scene = createJewelScene(decor, { resolveAsset, onPose: projectCase });
+        refreshArtwork();
         const order = [...rail.keys()];
         const direction = old ? Math.sign(order.indexOf(next.id) - order.indexOf(old.id)) : 0;
         const animation = old ? 'switching' : 'opening';
         next.node.dataset.mtEntryMotion = animation;
         boxObserver.observe(next.node);
-        modeObserver.observe(next.node, { attributes: true, attributeFilter: ['data-mt-disc-mode'] });
+        modeObserver.observe(next.node, { attributes: true, attributeFilter: ['data-mt-disc-mode', 'data-mt-character-pause'] });
         caseBox = readBox();
         scene.show(caseBox, direction);
+        orientation.setActive(true);
         audio.setSettingsActive(true);
         audio.setAmbient(true);
         audio.cue(old ? 'tab' : fromTitle ? 'settings-open' : 'open');
@@ -275,7 +322,14 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
             target.classList.remove('is-dragging');
         }, listen);
     }
-    rotate.addEventListener('dblclick', () => scene?.resetRotation(), listen);
+    rotate.addEventListener('dblclick', () => {
+        scene?.resetRotation();
+        orientation.reset();
+    }, listen);
+    sensor.addEventListener('click', () => {
+        if (orientation.status === 'active' || orientation.status === 'listening') orientation.reset();
+        else void orientation.enable();
+    }, listen);
     rotate.addEventListener('keydown', event => {
         const input = { ArrowLeft: [-0.05, 0], ArrowRight: [0.05, 0], ArrowUp: [0, -0.05], ArrowDown: [0, 0.05] }[event.key];
         if (!input) return;
@@ -298,6 +352,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
             boxObserver.disconnect();
             modeObserver.disconnect();
             panels.dispose();
+            orientation.dispose();
             scene?.dispose();
             decor.remove();
             controls.remove();

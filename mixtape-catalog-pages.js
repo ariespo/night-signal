@@ -14,7 +14,7 @@ function availableItems(container, selector) {
     return [...container.querySelectorAll(selector)].filter(node => !node.hidden && node.style.display !== 'none' && !node.classList.contains('displayNone'));
 }
 
-function renderList(ui, parent, readItems, emptyText) {
+function renderList(ui, parent, readItems, emptyText, includePortraits = false) {
     const doc = parent.ownerDocument;
     const list = doc.createElement('div');
     list.className = 'mt-disc-catalog-list';
@@ -46,8 +46,17 @@ function renderList(ui, parent, readItems, emptyText) {
                 name.className = 'mt-disc-catalog-name';
                 const value = doc.createElement('span');
                 value.className = 'mt-disc-catalog-value';
+                let portrait;
+                if (includePortraits) {
+                    portrait = doc.createElement('img');
+                    portrait.className = 'mt-character-card-portrait';
+                    portrait.alt = '';
+                    portrait.loading = 'lazy';
+                    portrait.decoding = 'async';
+                    button.append(portrait);
+                }
                 button.append(name, value);
-                row = { button, name, value, item };
+                row = { button, name, value, portrait, item };
                 button.addEventListener('click', () => {
                     if (!row.item.node.isConnected) return;
                     if (row.item.activate) row.item.activate(row.item.node);
@@ -57,6 +66,11 @@ function renderList(ui, parent, readItems, emptyText) {
                 rows.set(item.key, row);
             }
             row.item = item;
+            if (row.portrait) {
+                row.button.classList.toggle('mt-character-card-with-avatar', !!item.avatar);
+                ui.setAttribute(row.portrait, 'src', item.avatar || null);
+                ui.setAttribute(row.portrait, 'hidden', item.avatar ? null : '');
+            }
             if (row.name.textContent !== item.name) row.name.textContent = item.name;
             if (row.value.textContent !== item.value) row.value.textContent = item.value;
             ui.setAttribute(row.button, 'aria-current', item.selected ? 'true' : null);
@@ -184,33 +198,80 @@ function renderPersonas(ui) {
 function renderCharacters(ui) {
     const { source, root } = ui;
     const doc = root.ownerDocument;
+    const article = root.closest('.mt-disc-page');
+    const title = article.querySelector('.mt-disc-title');
+    const drawerTitle = title.textContent;
+    const pickerTitle = doc.documentElement.lang.toLowerCase().startsWith('zh') ? '角色卡' : 'Character cards';
+    const artwork = doc.createElement('div');
+    artwork.className = 'mt-character-disc';
+    artwork.setAttribute('aria-hidden', 'true');
+    const foil = doc.createElement('div');
+    foil.className = 'mt-character-disc-foil';
+    artwork.append(foil);
+    article.prepend(artwork);
     const listPage = doc.createElement('div');
     const editPage = doc.createElement('div');
     const groupPage = doc.createElement('div');
+    listPage.dataset.mtCharacterView = 'list';
+    editPage.dataset.mtCharacterView = 'edit';
+    groupPage.dataset.mtCharacterView = 'group';
     root.append(listPage, editPage, groupPage);
-    ui.watch(() => {
+    const toolbar = doc.createElement('div');
+    toolbar.className = 'mt-character-toolbar';
+    listPage.append(toolbar);
+    const search = ui.section('', toolbar);
+    search.classList.add('mt-character-search');
+
+    const tools = doc.createElement('details');
+    tools.className = 'mt-character-tools';
+    const summary = doc.createElement('summary');
+    summary.textContent = '管理角色';
+    tools.append(summary);
+    toolbar.append(tools);
+    const filters = ui.section('', tools);
+
+    function updateView() {
         const edit = shown(source.querySelector('#rm_ch_create_block'), source);
         const groupOpen = !edit && shown(source.querySelector('#rm_group_chats_block'), source);
+        const pause = !edit && !groupOpen && source.dataset.mtDiscMode === 'disc';
         ui.setAttribute(listPage, 'hidden', edit || groupOpen ? '' : null);
         ui.setAttribute(editPage, 'hidden', edit ? null : '');
         ui.setAttribute(groupPage, 'hidden', groupOpen ? null : '');
-    });
+        ui.setAttribute(artwork, 'hidden', pause ? null : '');
+        ui.setAttribute(source, 'data-mt-character-pause', pause ? '' : null);
+        const headline = pause ? pickerTitle : drawerTitle;
+        if (title.textContent !== headline) title.textContent = headline;
+        if (!pause && tools.open) tools.open = false;
+    }
+    const mode = new doc.defaultView.MutationObserver(updateView);
+    mode.observe(source, { attributes: true, attributeFilter: ['data-mt-disc-mode'] });
 
-    const filters = ui.section('角色列表', listPage);
-    ui.field(filters, '搜索角色', '#character_search_bar', { event: 'input' });
+    // Register view synchronization before the view-scoped fields, so the same refresh
+    // updates a newly opened editor as soon as the native drawer changes its contents.
+    updateView();
+    ui.watch(updateView);
+    ui.field(search, '搜索角色', '#character_search_bar', { event: 'input', allowHidden: true });
     ui.field(filters, '排序', '#character_sort_order', { event: 'change' });
-    ui.action(filters, '创建角色', '#rm_button_create');
-    ui.action(filters, '从文件导入', '#character_import_button');
-    ui.action(filters, '从链接导入', '#external_import_button');
-    ui.action(filters, '创建群聊', '#rm_button_group_chats');
-    addPagination(ui, filters, '#rm_print_characters_pagination');
-
-    const list = ui.section('选择角色或群聊', listPage);
+    ui.action(filters, '创建角色', '#rm_button_create', { value: '创建' });
+    ui.action(filters, '从文件导入', '#character_import_button', { value: '导入' });
+    ui.action(filters, '从链接导入', '#external_import_button', { value: '导入' });
+    ui.action(filters, '创建群聊', '#rm_button_group_chats', { value: '创建' });
+    const list = doc.createElement('div');
+    list.className = 'mt-character-results';
+    listPage.append(list);
     renderList(ui, list, () => availableItems(source.querySelector('#rm_print_characters_block'), '.character_select, .group_select, .bogus_folder_select').map(node => {
-        const key = node.getAttribute('data-chid') ?? node.getAttribute('grid') ?? node.getAttribute('tagid') ?? node;
-        const name = caption(node.querySelector('.ch_name, .group_name, .bogus_folder_name')) || node.querySelector('img')?.getAttribute('alt') || '未命名';
-        return { key: typeof key === 'string' ? `${node.classList[0]}:${key}` : key, name, value: '打开', node };
-    }), '没有找到角色或群聊');
+        const kind = node.matches('.character_select') ? '角色卡' : node.matches('.group_select') ? '群聊' : '文件夹';
+        const avatar = node.querySelector('img');
+        const key = node.getAttribute('data-chid') ?? node.getAttribute('grid') ?? node.getAttribute('tagid');
+        const name = caption(node.querySelector('.ch_name, .group_name, .bogus_folder_name')) || avatar?.alt || '未命名';
+        return { key: key === null ? node : `${kind}:${key}`, name, value: kind, avatar: avatar?.getAttribute('src'), node };
+    }), '没有找到角色或群聊', true);
+
+    const pages = ui.section('', listPage);
+    pages.classList.add('mt-character-pages');
+    for (const [direction, name] of [['prev', '上一页'], ['next', '下一页']]) {
+        ui.action(pages, name, () => source.querySelector(`#rm_print_characters_pagination .paginationjs-${direction}:not(.disabled) a`), { value: name });
+    }
 
     const editor = ui.section('角色详情', editPage);
     ui.action(editor, '返回角色列表', '#rm_button_characters');
@@ -246,6 +307,11 @@ function renderCharacters(ui) {
     ui.field(candidates, '搜索可添加角色', '#rm_group_filter', { event: 'input', allowHidden: true });
     addPagination(ui, candidates, '#rm_group_add_members_pagination');
     renderList(ui, candidates, groupMembers('#rm_group_add_members', 'add'), '没有可添加的角色');
+
+    return () => {
+        mode.disconnect();
+        source.removeAttribute('data-mt-character-pause');
+    };
 }
 
 export function renderCatalogPage(ui) {
@@ -253,6 +319,6 @@ export function renderCatalogPage(ui) {
         case 'Backgrounds': renderBackgrounds(ui); break;
         case 'rm_extensions_block': renderExtensions(ui); break;
         case 'PersonaManagement': renderPersonas(ui); break;
-        case 'right-nav-panel': renderCharacters(ui); break;
+        case 'right-nav-panel': return renderCharacters(ui);
     }
 }

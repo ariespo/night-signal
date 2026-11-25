@@ -5,6 +5,7 @@
 @import url("./mixtape-world.css");
 @import url("./mixtape-library.css");
 @import url("./mixtape-disc-page.css");
+@import url("./mixtape-character-pause.css");
 
 body.night-signal-theme {
   --SmartThemeBodyColor: #f5dbcd;
