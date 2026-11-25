@@ -1,4 +1,4 @@
-# 夜间电台 · Night Signal 1.7
+# 夜间电台 · Night Signal 1.8
 
 SillyTavern 1.19.0 起可用的 Mixtape 界面扩展。标题菜单接入继续聊天、最近聊天、角色管理和设置。
 
@@ -14,7 +14,7 @@ GitHub 提供安装和更新。装好以后，页面、字体、图像和声音�
 
 ### 其他安装方式
 
-**手动安装**。从 [GitHub Releases](https://github.com/ariespo/night-signal/releases) 下载并解压 `night-signal-1.7.0.zip`，将其中的 `night-signal` 文件夹放入 SillyTavern 的 `data/<用户名>/extensions/`。默认位置为 `data/default-user/extensions/night-signal/`。更新时覆盖同名文件并刷新酒馆。若曾手动安装且想改用 GitHub 更新，可先备份现有扩展目录并将它移到 `extensions/` 之外，再用上面的链接安装。
+**手动安装**。从 [GitHub Releases](https://github.com/ariespo/night-signal/releases) 下载并解压 `night-signal-1.8.0.zip`，将其中的 `night-signal` 文件夹放入 SillyTavern 的 `data/<用户名>/extensions/`。默认位置为 `data/default-user/extensions/night-signal/`。更新时覆盖同名文件并刷新酒馆。若曾手动安装且想改用 GitHub 更新，可先备份现有扩展目录并将它移到 `extensions/` 之外，再用上面的链接安装。
 
 **酒馆助手版**。从 [GitHub Releases](https://github.com/ariespo/night-signal/releases) 下载「酒馆助手全局脚本（JSON）」，在「酒馆助手 → 脚本 → 全局脚本 → 导入」选择下载的文件，然后开启「夜间电台」。原生扩展和全局脚本任选一种。
 
@@ -26,6 +26,7 @@ GitHub 提供安装和更新。装好以后，页面、字体、图像和声音�
 - 世界书可直接调激活参数和匹配规则，也可进入书库、条目列表、正文编辑和筛选。只滚动唱片盒中央的列表，标题、Hot Stuff 贴纸和底部两张标签固定在盒面。关键词和正文编辑由酒馆保存。
 - AI 参数和格式化模板按栏目排列，背景、角色和用户设定使用独立的列表行。页面底部的「完整设置」可进入该板块的扩展控件，扩展条目也可打开其专用界面。
 - 角色卡选择页使用原版游戏暂停菜单的透明正面盒、金色 CD 和贴纸，支持原有的搜索、排序、创建、导入和角色选择。
+- 角色卡选择页与设置之间会翻转唱片盒，在盒体转到侧面时切换正背面。系统或酒馆启用简化动效时，两个页面直接切换。
 - 拖动光盘盒露出的边缘或「旋转光盘盒」按钮可以旋转。标题、列表和底部按钮随盒体一起倾斜，仍可滚动和操作。旋转按钮也支持方向键与双击复位。系统或酒馆启用简化动效时，盒体保持静止。
 - 手机通过 HTTPS 打开酒馆时可倾斜设备旋转唱片盒。看到「启用体感」时先点按并允许浏览器访问方向传感器。以常用的握持姿势点「校准体感」可以重新设置起点。
 - 点击「返回」可离开设置。键盘焦点在面板或菜单中时也可按 Esc。标准手柄可以用方向键或肩键切换类别，B 返回。

@@ -115,10 +115,29 @@ const decals = [
 const hidden = { pitch: -0.28, yaw: 0.38, roll: -0.06, scale: 0.76, lift: 62, opacity: 0 };
 const resting = { pitch: 0.015, yaw: -0.025, roll: 0.01, scale: 1, lift: 0, opacity: 1 };
 const motion = { opening: 520, switching: 315, closing: 360 };
+// Timing and edge roll of the cooked PauseToSettings shot (the return retraces it).
+const turnToEdge = 350;
+const turnFromEdge = 433 + 1 / 3;
+const turnHold = 162.5;
+const edgeRoll = 5 * Math.PI / 180;
+const quarterTurn = Math.PI / 2;
 const maxCanvasPixels = 1_650_000;
 const interpolate = (from, to, fraction) => from + (to - from) * fraction;
 const ease = fraction => 1 - (1 - fraction) ** 3;
 const limit = (value, max) => Math.max(-max, Math.min(max, value));
+
+function blend(from, to, fraction) {
+    return Object.fromEntries(Object.keys(to).map(key => [key, interpolate(from[key], to[key], fraction)]));
+}
+
+function turnEase(t, afterEdge) {
+    const [a, b] = afterEdge ? [0.52118, 0.84941] : [0.19131, 0.57905];
+    return 3 * (1 - t) * t * ((1 - t) * a + t * b) + t ** 3;
+}
+
+function edgePose(direction) {
+    return { ...resting, scale: 0.99, pitch: 0, roll: edgeRoll, yaw: direction * quarterTurn };
+}
 
 function getHardwareContext(canvas) {
     try {
@@ -275,17 +294,18 @@ export function createJewelScene(surface, {
     const meshExtent = [1, 1, 0.002];
     let pose = { ...hidden };
     let transition;
+    let turn;
     let tilt = [0, 0];
     let pointer = [0, 0];
     let manual = [0, 0];
     const deviceTilt = [0, 0];
 
     function setPhase(next) {
-        surface.dataset.motion = next;
+        if (surface.dataset.motion !== next) surface.dataset.motion = next;
     }
 
     function requestDraw() {
-        if (!resources.signal.aborted && !doc.hidden && !frame && (active || transition)) {
+        if (!resources.signal.aborted && !doc.hidden && !frame && (active || transition || turn)) {
             frame = win.requestAnimationFrame(draw);
         }
     }
@@ -299,6 +319,7 @@ export function createJewelScene(surface, {
 
     function fitCanvas(state) {
         const { innerWidth, innerHeight, devicePixelRatio = 1 } = win;
+        const { box } = state;
         const projected = projectBounds(state, meshExtent);
         const previous = region?.viewWidth === innerWidth && region.viewHeight === innerHeight ? region : null;
         const pad = 28;
@@ -328,6 +349,7 @@ export function createJewelScene(surface, {
 
     function render(state) {
         if (!gl || !program || !objects.length || gl.isContextLost()) return;
+        const { box } = state;
         if (state.opacity > 0) fitCanvas(state);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         if (state.opacity <= 0) return;
@@ -360,6 +382,87 @@ export function createJewelScene(surface, {
         }
     }
 
+    function tiltTarget(still) {
+        return active && !still ? [
+            limit(-pointer[1] * 0.035 + manual[0] + deviceTilt[0], 0.255),
+            limit(pointer[0] * 0.06 + manual[1] + deviceTilt[1], 0.38),
+        ] : [0, 0];
+    }
+
+    function present(projected, projectedBox, still, turnTime) {
+        const state = {
+            ...projected, box: projectedBox, layoutBox: box,
+            lens: Math.max(win.innerWidth, win.innerHeight) * 0.95,
+            lightX: still ? 0 : pointer[0], lightY: still ? 0 : pointer[1],
+            turnTime,
+        };
+        onPose?.(state);
+        if (artworkVisible) render(state);
+    }
+
+    function restUntil(job, delay) {
+        job.timer ??= win.setTimeout(() => {
+            job.timer = undefined;
+            requestDraw();
+        }, Math.ceil(delay));
+    }
+
+    function drawTurn(now, still) {
+        const job = turn;
+        const arrival = { ...resting, pitch: resting.pitch + tilt[0], yaw: resting.yaw + tilt[1] };
+        if (job.phase === 'edge') {
+            if (!job.swapped) {
+                job.swapped = true;
+                job.swap();
+            }
+            return;
+        }
+
+        const arriving = job.phase === 'in';
+        const reversed = job.direction > 0;
+        const duration = arriving === reversed ? turnToEdge : turnFromEdge;
+        const holdUntil = job.start + (arriving ? duration : 0) + turnHold;
+        if (!still && reversed && !arriving && now < job.start) {
+            restUntil(job, job.start - now);
+            return;
+        }
+        const fraction = still ? 1 : Math.min(1, Math.max(0, (now - job.start) / duration));
+        const progress = reversed ? 1 - turnEase(1 - fraction, !arriving) : turnEase(fraction, arriving);
+        const edge = edgePose(arriving ? -job.direction : job.direction);
+        const projected = arriving ? blend(edge, arrival, progress) : blend(job.from, edge, progress);
+        const smooth = fraction ** 2 * (3 - 2 * fraction);
+        projected.roll = arriving ? interpolate(edge.roll, arrival.roll, smooth) : interpolate(job.from.roll, edge.roll, smooth);
+        const projectedBox = arriving ? blend(job.edgeBox, box, progress) : box;
+        if (arriving && fraction === 1) {
+            if (!still && !reversed && now < holdUntil) {
+                if (!job.timer) present(arrival, box, still);
+                restUntil(job, holdUntil - now);
+                return;
+            }
+            win.clearTimeout(job.timer);
+            turn = undefined;
+            pose = { ...resting };
+            setPhase('ready');
+            present(arrival, box, still);
+            job.finish();
+            return;
+        }
+
+        const turnTime = reversed
+            ? arriving ? (1 - fraction) * turnToEdge : turnToEdge + (1 - fraction) * turnFromEdge
+            : arriving ? turnToEdge + fraction * turnFromEdge : fraction * turnToEdge;
+        if (arriving) setPhase('flipping-in');
+        if (!arriving && fraction === 1) {
+            win.clearTimeout(job.timer);
+            job.timer = undefined;
+            job.phase = 'edge';
+            job.edgeBox = projectedBox;
+            setPhase('flipping-edge');
+        }
+        present(projected, projectedBox, still, turnTime);
+        requestDraw();
+    }
+
     function draw(now) {
         frame = 0;
         if (doc.hidden || !box) return;
@@ -373,21 +476,19 @@ export function createJewelScene(surface, {
                 if (!active) surface.hidden = true;
             }
         }
-        const target = active && !still ? [
-            limit(-pointer[1] * 0.035 + manual[0] + deviceTilt[0], 0.255),
-            limit(pointer[0] * 0.06 + manual[1] + deviceTilt[1], 0.38),
-        ] : [0, 0];
+        const target = tiltTarget(still);
         for (let axis = 0; axis < 2; axis++) {
             if (still || Math.abs(tilt[axis] - target[axis]) < 0.0004) tilt[axis] = target[axis];
             else tilt[axis] = interpolate(tilt[axis], target[axis], 0.22);
         }
-        const state = {
-            ...pose, box, lens: Math.max(win.innerWidth, win.innerHeight) * 0.95,
+        if (turn) {
+            drawTurn(now, still);
+            return;
+        }
+        present({
+            ...pose,
             pitch: pose.pitch + tilt[0], yaw: pose.yaw + tilt[1],
-            lightX: still ? 0 : pointer[0], lightY: still ? 0 : pointer[1],
-        };
-        onPose?.(state);
-        if (artworkVisible) render(state);
+        }, box, still);
         if (transition || tilt.some((angle, axis) => Math.abs(angle - target[axis]) > 0.0004)) requestDraw();
     }
 
@@ -506,6 +607,7 @@ export function createJewelScene(surface, {
             active = true;
             surface.hidden = false;
             prepareArtwork();
+            if (turn) return;
             if (!entering && direction && !reduced()) {
                 pose.yaw += Math.sign(direction) * 0.17;
                 pose.roll += Math.sign(direction) * 0.028;
@@ -516,12 +618,45 @@ export function createJewelScene(surface, {
         hide() {
             if (!active) return;
             active = false;
+            win.clearTimeout(turn?.timer);
+            turn = undefined;
             manual = [0, 0];
             deviceTilt.fill(0);
             animate('closing', hidden);
         },
+        flip(fromFront, swap, finish) {
+            if (!active || !box || reduced() || turn) return false;
+            transition = undefined;
+            turn = {
+                phase: 'out', start: win.performance.now() + (fromFront ? 0 : turnHold), direction: fromFront ? -1 : 1,
+                from: { ...pose, pitch: pose.pitch + tilt[0], yaw: pose.yaw + tilt[1] },
+                swap, finish,
+            };
+            setPhase('flipping-out');
+            requestDraw();
+            return true;
+        },
+        revealFlip() {
+            if (turn?.phase !== 'edge') return;
+            turn.phase = 'in';
+            turn.start = win.performance.now();
+            if (!reduced()) {
+                // The live drawer mounts while edge-on. Seed the other face before it can paint.
+                present(edgePose(-turn.direction), turn.edgeBox, false, turnToEdge);
+                setPhase('flipping-in');
+            }
+            requestDraw();
+        },
+        cancelFlip() {
+            if (!turn) return;
+            win.clearTimeout(turn.timer);
+            turn = undefined;
+            pose = { ...resting };
+            setPhase(active ? 'ready' : 'idle');
+            requestDraw();
+        },
         rotate(dx, dy) {
-            if (!active || reduced()) return;
+            if (!active || turn || reduced()) return;
             manual = [limit(manual[0] + dy, 0.22), limit(manual[1] + dx, 0.32)];
             requestDraw();
         },
@@ -546,6 +681,7 @@ export function createJewelScene(surface, {
         dispose() {
             resources.abort();
             reducedByHost.disconnect();
+            win.clearTimeout(turn?.timer);
             if (frame) win.cancelAnimationFrame(frame);
             if (gl && program && !gl.isContextLost()) {
                 for (const object of objects) {

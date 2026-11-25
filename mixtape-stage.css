@@ -65,8 +65,26 @@ body.night-signal-theme {
 
 .mt-scene-layer[data-renderer="flat"] .mt-scene-canvas,
 .mt-scene-layer[data-renderer="webgl"] .mt-scene-fallback,
-.mt-scene-layer[data-artwork="character-pause"] :is(.mt-scene-canvas, .mt-scene-fallback) {
+.mt-scene-layer:is([data-artwork="character-pause"], [data-motion="flipping-edge"]) :is(.mt-scene-canvas, .mt-scene-fallback) {
     visibility: hidden;
+}
+
+.mt-scene-spine {
+    position: absolute;
+    border: 1px solid #dccac1;
+    border-radius: 10% / 2%;
+    background: linear-gradient(90deg, #201b1d, #b9aaa2 12%, #4b4040 35%, #292126 60%, #d9c7b9 83%, #302427);
+    box-shadow: inset 0 0 5px #211b1c, 0 0 2px #ffebde78;
+    pointer-events: none;
+}
+
+.mt-scene-layer[data-motion^="flipping"] .mt-scene-fallback,
+body:has(> .mt-scene-layer[data-motion^="flipping"]) .mt-disc-page {
+    backface-visibility: hidden;
+}
+
+.mt-disc-page > :is(.mt-disc-header, .mt-disc-content, .mt-disc-footer) {
+    opacity: var(--mt-case-label-opacity, 1);
 }
 
 .mt-scene-fallback {

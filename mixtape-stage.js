@@ -12,6 +12,11 @@ const sensorLabels = {
     insecure: ['体感需 HTTPS', '通过 HTTPS 打开酒馆后即可使用手机体感旋转'],
 };
 
+function fadeBetween(time, start, end) {
+    const fraction = Math.min(1, Math.max(0, (time - start) / (end - start)));
+    return fraction ** 2 * (3 - 2 * fraction);
+}
+
 function createButton(doc, label, className = '') {
     const button = doc.createElement('button');
     button.type = 'button';
@@ -28,6 +33,9 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     decor.setAttribute('aria-hidden', 'true');
     const fallback = doc.createElement('div');
     fallback.className = 'mt-scene-fallback';
+    const spine = doc.createElement('span');
+    spine.className = 'mt-scene-spine';
+    spine.hidden = true;
     const reflection = doc.createElement('span');
     reflection.className = 'mt-scene-reflection';
     fallback.append(reflection);
@@ -36,7 +44,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         sticker.className = className;
         fallback.append(sticker);
     }
-    decor.append(fallback);
+    decor.append(fallback, spine);
 
     const controls = doc.createElement('div');
     controls.className = 'mt-stage-controls';
@@ -48,7 +56,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     for (const { id, label } of panelEntries) {
         const button = createButton(doc, label);
         button.setAttribute('aria-pressed', 'false');
-        button.addEventListener('click', () => panels.open(id));
+        button.addEventListener('click', () => openPanel(id));
         rail.set(id, button);
         nav.append(button);
     }
@@ -77,6 +85,8 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     let drag;
     let suppressBackdropClick = false;
     let navFocused = false;
+    let caseTurn;
+    let queuedPanel;
 
     function showSensorStatus(status) {
         const label = sensorLabels[status];
@@ -142,24 +152,47 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     const modeObserver = new win.MutationObserver(() => {
         refreshArtwork();
         refreshBounds();
+        revealFlip();
     });
     win.addEventListener('resize', refreshBounds, listen);
     win.visualViewport?.addEventListener('resize', refreshBounds, listen);
 
-    function projectCase({ box, lens, pitch, yaw, roll, scale, lift, opacity, lightX, lightY }) {
+    function projectCase({ box, layoutBox, lens, pitch, yaw, roll, scale, lift, opacity, lightX, lightY, turnTime }) {
         // The browser's y axis points down. The depth is the front of the original case mesh.
-        const depth = box.width / 2 * 0.045274;
-        const transform = `translateY(${lift}px) perspective(${lens}px) rotateZ(${-roll}rad) rotateY(${yaw}rad) `
-            + `rotateX(${-pitch}rad) scale3d(${scale},${scale},${scale}) translateZ(${depth}px)`;
+        const depth = layoutBox.width / 2 * 0.045274;
+        const dx = box.x + box.width / 2 - layoutBox.x - layoutBox.width / 2;
+        const dy = box.y + box.height / 2 - layoutBox.y - layoutBox.height / 2;
+        const wide = scale * box.width / layoutBox.width;
+        const tall = scale * box.height / layoutBox.height;
+        const transform = `translate(${dx}px,${dy + lift}px) perspective(${lens}px) rotateZ(${-roll}rad) rotateY(${yaw}rad) `
+            + `rotateX(${-pitch}rad) scale3d(${wide},${tall},${wide}) translateZ(${depth}px)`;
+        const front = decor.dataset.artwork === 'character-pause';
+        const face = turnTime === undefined ? 1 : Math.min(1, Math.abs(Math.cos(yaw)) * 8);
         if (content && !content.hidden) {
             content.style.transform = transform;
-            content.style.opacity = opacity;
+            content.style.opacity = opacity * face;
+            if (turnTime === undefined) content.style.removeProperty('--mt-case-label-opacity');
+            else {
+                const label = front ? 1 - fadeBetween(turnTime, 350, 625) : fadeBetween(turnTime, 295.833, 804.167);
+                content.style.setProperty('--mt-case-label-opacity', label);
+            }
         }
-        if (decor.dataset.renderer === 'flat' && decor.dataset.artwork !== 'character-pause') {
+        if (decor.dataset.renderer === 'flat' && !front) {
             fallback.style.transform = transform;
-            fallback.style.opacity = opacity;
+            fallback.style.opacity = opacity * face;
             reflection.style.setProperty('--mt-reflection-x', `${-yaw * 245 + lightX * 8}%`);
             reflection.style.setProperty('--mt-reflection-y', `${-pitch * 230 - lightY * 8}%`);
+        }
+        spine.hidden = face >= 1 || (!front && decor.dataset.renderer === 'webgl' && decor.dataset.motion !== 'flipping-edge');
+        if (!spine.hidden) {
+            Object.assign(spine.style, {
+                left: `${box.x + box.width / 2}px`,
+                top: `${box.y + box.height / 2 + lift}px`,
+                height: `${box.height * scale}px`,
+                width: `${box.width * scale * 0.045274}px`,
+                transform: `translate(-50%, -50%) rotate(${-roll}rad)`,
+                opacity: opacity * (1 - face),
+            });
         }
     }
 
@@ -167,6 +200,65 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         const enabled = isSoundOn();
         sound.textContent = enabled ? '声音开' : '声音关';
         sound.setAttribute('aria-pressed', String(enabled));
+    }
+
+    function finishFlip() {
+        win.clearTimeout(caseTurn?.wait);
+        caseTurn = undefined;
+        if (content) content.inert = false;
+        const next = queuedPanel;
+        queuedPanel = undefined;
+        if (next && next !== panel?.id) openPanel(next);
+    }
+
+    function cancelFlip() {
+        if (!caseTurn) return;
+        queuedPanel = undefined;
+        scene.cancelFlip();
+        spine.hidden = true;
+        finishFlip();
+    }
+
+    function revealFlip() {
+        if (!caseTurn?.opening || caseTurn.revealed || panel?.id !== caseTurn.id || decor.dataset.artwork !== caseTurn.artwork) return;
+        win.clearTimeout(caseTurn.wait);
+        scene.revealFlip();
+        caseTurn.revealed = true;
+    }
+
+    function openNativePanel(id) {
+        if (id === 'rightNavHolder' && panel && panel.id !== id
+            && doc.getElementById('right-nav-panel')?.dataset.menuType !== 'characters') {
+            doc.getElementById('rm_button_characters')?.click();
+        }
+        return panels.open(id);
+    }
+
+    function openPanel(id) {
+        if (caseTurn) {
+            queuedPanel = id;
+            return true;
+        }
+        const fromFront = decor.dataset.artwork === 'character-pause';
+        const toFront = id === 'rightNavHolder';
+        if (!panel || panel.id === id || panel.node.dataset.mtDiscMode !== 'disc' || !scene || fromFront === toFront) {
+            return openNativePanel(id);
+        }
+
+        const job = { id, artwork: toFront ? 'character-pause' : 'settings' };
+        const started = scene.flip(fromFront, () => {
+            job.opening = true;
+            if (!openNativePanel(id)) {
+                cancelFlip();
+                return;
+            }
+            if (caseTurn === job && !job.revealed) job.wait = win.setTimeout(cancelFlip, 1000);
+        }, finishFlip);
+        if (!started) return openNativePanel(id);
+
+        caseTurn = job;
+        if (content) content.inert = true;
+        return true;
     }
 
     function panelChanged(next) {
@@ -181,6 +273,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         for (const [id, button] of rail) button.setAttribute('aria-pressed', String(id === next?.id));
 
         if (!next) {
+            cancelFlip();
             orientation.setActive(false);
             scene?.hide();
             if (old) audio.cue('close');
@@ -197,16 +290,22 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         }
 
         win.clearTimeout(titleTimer);
+        if (caseTurn && next.id !== caseTurn.id) cancelFlip();
         if (!scene) scene = createJewelScene(decor, { resolveAsset, onPose: projectCase });
         refreshArtwork();
         const order = [...rail.keys()];
         const direction = old ? Math.sign(order.indexOf(next.id) - order.indexOf(old.id)) : 0;
-        const animation = old ? 'switching' : 'opening';
+        const animation = caseTurn ? 'flipping' : old ? 'switching' : 'opening';
         next.node.dataset.mtEntryMotion = animation;
+        if (caseTurn && content) {
+            content.style.opacity = 0;
+            content.inert = true;
+        }
         boxObserver.observe(next.node);
         modeObserver.observe(next.node, { attributes: true, attributeFilter: ['data-mt-disc-mode', 'data-mt-character-pause'] });
         caseBox = readBox();
         scene.show(caseBox, direction);
+        revealFlip();
         orientation.setActive(true);
         audio.setSettingsActive(true);
         audio.setAmbient(true);
@@ -228,11 +327,12 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         const choices = [...rail];
         const current = choices.findIndex(([id]) => id === panel?.id);
         const [id, button] = choices[(current + direction + choices.length) % choices.length];
-        panels.open(id);
+        openPanel(id);
         button.focus({ preventScroll: true });
     }
 
     function exit() {
+        cancelFlip();
         if (panel) panels.close();
     }
 
@@ -266,6 +366,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     }, listen);
     nav.addEventListener('keydown', event => {
         if (event.key === 'ArrowDown') {
+            if (caseTurn) return;
             const first = [...(panel?.node.querySelectorAll('.mt-disc-page :is([tabindex="0"], button:not([tabindex="-1"]), input, textarea)') ?? [])]
                 .find(element => !element.disabled && element.getClientRects().length);
             if (!first) return;
@@ -343,11 +444,12 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         open(id, { returnToTitle = false } = {}) {
             fromTitle = returnToTitle;
             navFocused = false;
-            return panels.open(id);
+            return openPanel(id);
         },
         dispose() {
             lifecycle.abort();
             win.clearTimeout(titleTimer);
+            cancelFlip();
             disconnectGamepad();
             boxObserver.disconnect();
             modeObserver.disconnect();
