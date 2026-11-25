@@ -1,0 +1,330 @@
+body.mt-stage-open :is(#Backgrounds, #rm_extensions_block, #PersonaManagement, #right-nav-panel)[data-mt-native-panel] {
+    --mt-library-rule: var(--mt-detail-line, rgb(210 182 160 / 40%));
+    --mt-library-accent: var(--mt-detail-accent, #c4def0);
+    --mt-library-hover: var(--mt-detail-row-hover, rgb(159 196 224 / 11%));
+    --mt-library-muted: var(--mt-detail-muted, #c2aaa0);
+}
+
+/* Backgrounds use the original divider and underline for the native tabs and shelf. */
+body.mt-stage-open #Backgrounds[data-mt-native-panel] #bg-header-fixed {
+    padding: 0 0 .65rem;
+    background: transparent;
+    border-bottom: 1px solid var(--mt-library-rule);
+}
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] :is(.bg-header-row-1, .bg-header-row-2) {
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .45rem .65rem;
+}
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] .bg-header-row-2 { margin-top: .55rem; }
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] #bg-filter {
+    min-inline-size: 9ch;
+    flex: 1 1 10ch;
+}
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] #bg_tabs {
+    min-block-size: 0;
+    height: auto;
+    background: transparent;
+}
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] #bg_tabs .bg_tabs_list {
+    align-items: center;
+    flex-wrap: wrap;
+    flex: 0 0 auto;
+    gap: .4rem clamp(.55rem, 1.6vw, 1.2rem);
+    padding: .35rem 0 0;
+    margin: 0;
+}
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] #bg_tabs .bg_tab_button {
+    min-inline-size: 0;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    opacity: 1;
+    font-family: var(--mt-title-face, inherit);
+}
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] #bg_tabs .bg_tab_button a {
+    padding: .35em .2em;
+    color: var(--mt-library-accent);
+}
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] #bg_tabs .bg_tab_button.ui-tabs-active { border-bottom-color: #fff; }
+body.mt-stage-open #Backgrounds[data-mt-native-panel] #bg_tabs .bg_tab_button.ui-tabs-active a { color: #fff; }
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] #bg_tabs .heading-controls {
+    position: static;
+    margin-inline-start: auto;
+    transform: none;
+    flex-wrap: wrap;
+    gap: .35rem;
+}
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] #bg_tabs .bg_tab_panel {
+    min-block-size: 0;
+    height: auto;
+    padding: .6rem 3px .45rem;
+}
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] :is(#bg_menu_content, #bg_custom_content, .bg_folder_grid) {
+    gap: clamp(.45rem, 1.15vw, .9rem);
+}
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] :is(.bg_example, .bg_folder_tile) {
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
+}
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] :is(.BGSampleTitle, .bg_folder_tile_overlay) {
+    padding: .3em .45em;
+    background: linear-gradient(0deg, rgb(11 9 11 / 96%), rgb(17 16 19 / 77%));
+    color: var(--mt-ink, #eed9c9);
+    border-top: 1px solid var(--mt-library-rule);
+    border-radius: 0;
+}
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] .BGSampleTitle { opacity: 1; text-align: start; }
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] :is(.bg_example.selected-background, .folder-group-selected, .bg_example:focus-visible, .bg_folder_tile:focus-visible) {
+    outline-color: var(--mt-library-accent);
+}
+
+body.mt-stage-open #Backgrounds[data-mt-native-panel] #bg_folder_breadcrumb {
+    border-block-end: 1px solid var(--mt-library-rule);
+    padding-block-end: .4rem;
+    margin-block-end: .7rem;
+}
+
+/* Extension settings stay in their native accordions and keep both mount points. */
+body.mt-stage-open #rm_extensions_block[data-mt-native-panel] .extensions_block {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    align-items: start;
+    gap: .75rem 1.35rem;
+}
+
+body.mt-stage-open #rm_extensions_block[data-mt-native-panel] .extensions_block > :not(#extensions_settings, #extensions_settings2) {
+    grid-column: 1 / -1;
+}
+
+body.mt-stage-open #rm_extensions_block[data-mt-native-panel] .extensions_block > :first-child {
+    padding-block-end: .65rem;
+    border-block-end: 1px solid var(--mt-library-rule);
+    gap: .45rem .65rem;
+}
+
+body.mt-stage-open #rm_extensions_block[data-mt-native-panel] :is(#extensions_settings, #extensions_settings2) {
+    width: 100%;
+    min-inline-size: 0;
+}
+
+body.mt-stage-open #rm_extensions_block[data-mt-native-panel] :is(.extension_container > .inline-drawer, .extension_container > * > .inline-drawer) > .inline-drawer-toggle,
+body.mt-stage-open #rm_extensions_block[data-mt-native-panel] .mt-theme-options > summary {
+    min-block-size: 2.65rem;
+    margin: 0;
+    padding: .45rem .15rem;
+    border: 0;
+    border-block-end: 1px solid var(--mt-library-rule);
+    border-radius: 0;
+    background: transparent;
+    color: var(--mt-ink, #eed9c9);
+}
+
+body.mt-stage-open #rm_extensions_block[data-mt-native-panel] :is(.extension_container > .inline-drawer, .extension_container > * > .inline-drawer) > .inline-drawer-toggle:is(:hover, :focus-within),
+body.mt-stage-open #rm_extensions_block[data-mt-native-panel] .mt-theme-options > summary:is(:hover, :focus-visible) {
+    background: var(--mt-library-hover);
+}
+
+body.mt-stage-open #rm_extensions_block[data-mt-native-panel] :is(.extension_container > .inline-drawer, .extension_container > * > .inline-drawer) > .inline-drawer-content {
+    margin: .15rem 0 .75rem;
+    padding: .7rem .65rem;
+    border-inline-start: 1px solid var(--mt-library-rule);
+    background: rgb(11 9 12 / 24%);
+}
+
+/* Persona list and inspector use the same horizontal rules as the original options. */
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] #persona-management-block {
+    display: grid;
+    grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+    align-items: start;
+    gap: clamp(.8rem, 2vw, 1.55rem);
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] :is(.persona_management_left_column, .persona_management_right_column) {
+    min-inline-size: 0;
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] .persona_management_left_column > :first-child {
+    padding-block-end: .65rem;
+    border-block-end: 1px solid var(--mt-library-rule);
+    gap: .45rem;
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] .persona_management_right_column {
+    border-inline-start: 1px solid var(--mt-library-rule);
+    padding-inline-start: clamp(.8rem, 2vw, 1.55rem);
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] :is(.persona_management_current_persona, .persona_management_global_settings) h4,
+body.mt-stage-open #right-nav-panel[data-mt-native-panel] :is(#description_div, #first_message_div, #spoiler_free_desc > .inline-drawer-toggle, #rm_group_chats_block > .inline-drawer > .inline-drawer-toggle) {
+    color: var(--mt-library-muted);
+    font-family: var(--mt-title-face, inherit);
+    font-weight: 700;
+    padding: .35rem 0;
+    margin: 0 0 .45rem;
+    border: 0;
+    border-block-end: 1px solid var(--mt-library-rule);
+    border-radius: 0;
+    background: transparent;
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] .persona_management_current_persona > .flex-container > h4 {
+    margin-block-end: .15rem;
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] #persona_controls {
+    margin-block-end: .85rem;
+    align-items: center;
+    gap: .35rem .55rem;
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] #your_name {
+    flex: 1 1 100%;
+    margin: 0;
+    opacity: 1;
+    color: var(--mt-ink, #eed9c9);
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] #persona_description { min-block-size: 7rem; }
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] .persona_management_global_settings { margin-block-start: 1rem; }
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] .persona_management_global_settings .range-block {
+    padding: .35rem .1rem;
+    margin: 0;
+    border-block-end: 1px solid var(--mt-library-rule);
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] .persona_management_global_settings .checkbox_label {
+    flex-direction: row-reverse;
+    justify-content: space-between;
+    min-block-size: 2rem;
+    gap: .55rem;
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] .persona_management_global_settings .range-block:focus-within {
+    background: var(--mt-library-hover);
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] #user_avatar_block:not(.gridView) { gap: .15rem; }
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] #user_avatar_block .avatar_upload {
+    margin: .25rem .3rem;
+    border: 1px dashed var(--mt-library-rule);
+    border-radius: 4px;
+    background: rgb(57 81 108 / 23%);
+    color: var(--mt-library-accent);
+    font-size: 1.5rem;
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] #user_avatar_block .avatar_upload:is(:hover, :focus-visible) {
+    background: var(--mt-library-hover);
+}
+
+/* Character lists, cards and editor sections all keep their native selectors. */
+body.mt-stage-open #right-nav-panel[data-mt-native-panel] > .scrollableInner {
+    min-block-size: 0;
+    flex: 1 1 auto;
+}
+
+body.mt-stage-open #right-nav-panel[data-mt-native-panel] :is(#charListFixedTop, #rm_print_characters_pagination, #avatar-and-name-block) {
+    border-block-end: 1px solid var(--mt-library-rule);
+    padding: .35rem 0 .65rem;
+    margin-block-end: .5rem;
+}
+
+body.mt-stage-open #right-nav-panel[data-mt-native-panel] #rm_print_characters_pagination { justify-content: flex-start; }
+
+body.mt-stage-open #right-nav-panel[data-mt-native-panel] #charListFixedTop :is(#rm_button_bar, #form_character_search_form, .rm_tag_controls) {
+    gap: .4rem;
+    margin-block-end: .4rem;
+}
+
+body.mt-stage-open #right-nav-panel[data-mt-native-panel] #charListFixedTop .rm_tag_controls:has(.tags:empty):not(:has(.tags > *)) {
+    margin-block-end: 0;
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] #user_avatar_block .avatar-container,
+body.mt-stage-open #right-nav-panel[data-mt-native-panel] #rm_print_characters_block :is(.character_select, .group_select, .bogus_folder_select) {
+    border-radius: 0;
+    border-block-end: 1px solid var(--mt-library-rule);
+    padding: .45rem .55rem;
+    margin: 0;
+    min-inline-size: 0;
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] #user_avatar_block .avatar-container:is(:hover, :focus-within),
+body.mt-stage-open #right-nav-panel[data-mt-native-panel] #rm_print_characters_block :is(.character_select, .group_select, .bogus_folder_select):is(:hover, :focus-within) {
+    background: var(--mt-library-hover);
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] #user_avatar_block .avatar-container.selected {
+    border-inline-start: 2px solid var(--mt-library-accent);
+    background: var(--mt-library-hover);
+}
+
+body.mt-stage-open #right-nav-panel[data-mt-native-panel] #rm_print_characters_block .ch_description,
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] #user_avatar_block .ch_description {
+    color: var(--mt-library-muted);
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] #user_avatar_block.gridView,
+body.mt-stage-open.charListGrid #right-nav-panel[data-mt-native-panel] #rm_print_characters_block {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 6.5rem), 1fr));
+    gap: .55rem;
+    align-content: start;
+}
+
+body.mt-stage-open #PersonaManagement[data-mt-native-panel] #user_avatar_block.gridView .avatar-container,
+body.mt-stage-open.charListGrid #right-nav-panel[data-mt-native-panel] #rm_print_characters_block :is(.character_select, .group_select, .bogus_folder_select) {
+    width: 100%;
+    max-width: none;
+    border: 1px solid var(--mt-library-rule);
+    border-radius: 4px;
+    align-items: center;
+}
+
+body.mt-stage-open.charListGrid #right-nav-panel[data-mt-native-panel] #rm_print_characters_block .text_block { grid-column: 1 / -1; }
+
+body.mt-stage-open #right-nav-panel[data-mt-native-panel] #form_create > :is(#descriptionWrapper, #firstMessageWrapper, #spoiler_free_desc) {
+    min-inline-size: 0;
+    margin-block: .75rem;
+}
+
+body.mt-stage-open :is(#PersonaManagement, #right-nav-panel)[data-mt-native-panel] :is(#persona_description, #description_textarea, #firstmessage_textarea) {
+    background: rgb(10 9 12 / 56%);
+    border-radius: 3px;
+}
+
+@media (max-width: 760px) {
+    body.mt-stage-open #Backgrounds[data-mt-native-panel] .bg-header-row-1 .expander { display: none; }
+
+    body.mt-stage-open #rm_extensions_block[data-mt-native-panel] .extensions_block,
+    body.mt-stage-open #PersonaManagement[data-mt-native-panel] #persona-management-block {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    body.mt-stage-open #PersonaManagement[data-mt-native-panel] .persona_management_right_column {
+        border-inline-start: 0;
+        border-block-start: 1px solid var(--mt-library-rule);
+        padding: .65rem 0 0;
+    }
+}

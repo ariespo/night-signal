@@ -1,0 +1,92 @@
+body.mt-stage-open #top-settings-holder {
+    z-index: 4100 !important;
+    pointer-events: none;
+}
+
+body.mt-stage-open #top-settings-holder > .drawer > .drawer-toggle,
+body.mt-stage-open .drawer-content.openDrawer:is(
+    #left-nav-panel, #rm_api_block, #AdvancedFormatting, #WorldInfo, #user-settings-block,
+    #Backgrounds, #rm_extensions_block, #PersonaManagement, #right-nav-panel
+):not([data-mt-native-panel]) {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+body.mt-stage-open :is(#left-nav-panel, #right-nav-panel, .drawer-content).openDrawer[data-mt-native-panel] {
+    --mt-case-width: min(71vw, 1210px);
+    --mt-case-left: calc((100vw - var(--mt-case-width)) / 2);
+    --mt-case-top: max(14dvh, 90px);
+    --mt-case-height: min(74dvh, calc(100dvh - var(--mt-case-top) - 52px));
+    --SmartThemeBodyColor: var(--mt-ink, #eed9c9);
+    --SmartThemeBorderColor: rgb(198 177 161 / 32%);
+    --SmartThemeBlurTintColor: rgb(34 27 32 / 86%);
+    position: fixed !important;
+    inset: var(--mt-case-top) auto auto var(--mt-case-left) !important;
+    box-sizing: border-box;
+    width: var(--mt-case-width) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    height: var(--mt-case-height) !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: clamp(20px, 5.1dvh, 55px) clamp(18px, 4.5vw, 65px) clamp(18px, 4dvh, 38px);
+    background: linear-gradient(105deg, rgb(22 16 19 / 54%), rgb(13 10 14 / 78%));
+    color: var(--mt-ink, #eed9c9);
+    border: 1px solid rgb(202 172 152 / 25%);
+    border-radius: 5px;
+    box-shadow: inset 0 0 50px rgb(0 0 0 / 27%);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transform: none;
+    visibility: visible;
+    pointer-events: auto;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: #92796f rgb(14 12 15 / 60%);
+    animation: none;
+    transition: none;
+}
+
+body.mt-stage-open [data-mt-native-panel] :is(h1, h2, h3, h4) {
+    font-family: var(--mt-title-face, system-ui);
+    text-shadow: 0 1px 3px #120b0a;
+}
+
+body.mt-stage-open [data-mt-native-panel] :is(.menu_button, button, select, textarea, input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"])) {
+    border-color: rgb(194 170 154 / 39%);
+}
+
+body.mt-stage-open [data-mt-native-panel] :is(button, input, select, textarea, .menu_button, a[href], [tabindex]):focus-visible {
+    outline: 2px solid #c4def0;
+    outline-offset: 2px;
+}
+
+body.mt-stage-open:not(.reduced-motion) [data-mt-native-panel][data-mt-entry-motion="opening"] > * {
+    animation: mt-drawer-contents-in 400ms cubic-bezier(.19, .72, .25, 1) both;
+}
+
+body.mt-stage-open:not(.reduced-motion) [data-mt-native-panel][data-mt-entry-motion="switching"] > * {
+    animation: mt-drawer-contents-in 235ms cubic-bezier(.18, .78, .29, 1) both;
+}
+
+@keyframes mt-drawer-contents-in {
+    from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.mt-stage-open [data-mt-native-panel][data-mt-entry-motion] > * {
+        animation: none !important;
+    }
+}
+
+@media (max-width: 760px) {
+    body.mt-stage-open :is(#left-nav-panel, #right-nav-panel, .drawer-content).openDrawer[data-mt-native-panel] {
+        --mt-case-width: calc(100vw - 20px);
+        --mt-case-left: 10px;
+        --mt-case-top: max(16dvh, 110px);
+        --mt-case-height: calc(100dvh - var(--mt-case-top) - 64px - env(safe-area-inset-bottom, 0px));
+        padding: 17px 12px 18px;
+        background: rgb(19 14 18 / 80%);
+    }
+}

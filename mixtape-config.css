@@ -1,0 +1,288 @@
+/* Configuration pages share the jacket's section rules and a reading-order flow. */
+body.mt-stage-open :is(#left-nav-panel, #rm_api_block, #AdvancedFormatting, #user-settings-block)[data-mt-native-panel] {
+    --mt-config-columns: minmax(0, 1fr) minmax(12rem, 47%);
+    --mt-config-row: clamp(2.5rem, 4.9vh, 3rem);
+    --mt-config-section-gap: clamp(1.2rem, 3.2vh, 2rem);
+}
+
+body.mt-stage-open :is(#left-nav-panel, #rm_api_block, #AdvancedFormatting, #user-settings-block)[data-mt-native-panel]
+:is(h4, .standoutHeader):not([data-mt-detail-heading]) {
+    background: none;
+    border: 0;
+    border-block-end: 1px solid var(--mt-detail-line, #9b8279);
+    border-radius: 0;
+    margin-block: var(--mt-config-section-gap) .35rem;
+    padding: .25em 0 .45em;
+    color: var(--mt-detail-muted, #bcaaa1);
+    font-family: var(--mt-title-face, system-ui);
+    text-align: start;
+}
+
+body.mt-stage-open :is(#left-nav-panel, #rm_api_block, #AdvancedFormatting, #user-settings-block)[data-mt-native-panel] hr {
+    margin-block: .7rem;
+    border: 0;
+    border-block-start: 1px solid var(--mt-detail-line, #9b8279);
+}
+
+/* AI response configuration: preset toolbar followed by one sampler per row. */
+body.mt-stage-open #left-nav-panel[data-mt-native-panel] > .scrollableInner {
+    height: auto;
+    overflow: visible;
+    padding: 0;
+}
+
+body.mt-stage-open #left-nav-panel[data-mt-native-panel] #ai_response_configuration {
+    display: block;
+}
+
+body.mt-stage-open #left-nav-panel[data-mt-native-panel] #clickSlidersTips {
+    margin-inline: 0;
+    color: var(--mt-detail-muted, #bcaaa1);
+    text-align: start;
+}
+
+body.mt-stage-open #left-nav-panel[data-mt-native-panel] #pro-settings-block {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: .4rem;
+    margin-block: var(--mt-config-section-gap) 0;
+}
+
+body.mt-stage-open #left-nav-panel[data-mt-native-panel] :is(#amount_gen_block, #max_context_block) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 30%) minmax(4.1rem, 11%);
+    align-items: center;
+    gap: .4rem .65rem;
+    min-height: var(--mt-config-row);
+    margin: 0;
+    border-block-end: 1px solid var(--mt-detail-line, #9b8279);
+    padding-block: .32rem .5rem;
+}
+
+body.mt-stage-open #left-nav-panel[data-mt-native-panel]
+:is(#amount_gen_block, #max_context_block) > .flex-container {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+}
+
+body.mt-stage-open #left-nav-panel[data-mt-native-panel]
+.range-block:has(> .range-block-title + :is(.range-block-range-and-counter, .wide100p)) {
+    display: grid;
+    grid-template-columns: var(--mt-config-columns);
+    align-items: center;
+    column-gap: 1rem;
+    min-height: var(--mt-config-row);
+    margin: 0;
+    border-block-end: 1px solid var(--mt-detail-line, #9b8279);
+    padding-block: .32rem;
+}
+
+body.mt-stage-open #left-nav-panel[data-mt-native-panel] .range-block-title {
+    text-align: start;
+    min-width: 0;
+}
+
+body.mt-stage-open #left-nav-panel[data-mt-native-panel] .range-block-range-and-counter {
+    align-items: center;
+    min-width: 0;
+}
+
+body.mt-stage-open #left-nav-panel[data-mt-native-panel] .range-block-range {
+    min-width: 0;
+}
+
+body.mt-stage-open #left-nav-panel[data-mt-native-panel] .range-block-counter {
+    flex: 0 0 clamp(4.1rem, 8.5vw, 5.5rem);
+}
+
+body.mt-stage-open #left-nav-panel[data-mt-native-panel] .range-block-counter input {
+    width: 100%;
+    min-width: 0;
+}
+
+/* API selection is a full-width opening line. Provider forms follow it in place. */
+body.mt-stage-open #rm_api_block[data-mt-native-panel] #main-API-selector-block {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    border-block: 1px solid var(--mt-detail-line, #9b8279);
+    padding-block: .6rem;
+}
+
+body.mt-stage-open #rm_api_block[data-mt-native-panel] :is(#main_api, #textgen_type, #chat_completion_source) {
+    min-height: var(--mt-config-row);
+    margin: 0;
+    color: var(--mt-detail-accent, #bdd9eb);
+}
+
+body.mt-stage-open #rm_api_block[data-mt-native-panel] form :is(input, select, textarea) {
+    min-width: 0;
+}
+
+body.mt-stage-open #rm_api_block[data-mt-native-panel] form > :is(div, ul) {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+body.mt-stage-open #rm_api_block[data-mt-native-panel]
+form div:has(> h4:first-child + select:last-child, > h4:first-child + select + .select2:last-child),
+body.mt-stage-open #AdvancedFormatting[data-mt-native-panel]
+:is(#context_story_string_position_block, [name="tokenizerSelectorBlock"], [name="tokenPaddingBlock"]) {
+    display: grid;
+    grid-template-columns: var(--mt-config-columns);
+    align-items: center;
+    gap: .65rem;
+    min-height: var(--mt-config-row);
+    border-block-end: 1px solid var(--mt-detail-line, #9b8279);
+    margin-block-end: .35rem;
+    padding-block: .32rem;
+}
+
+body.mt-stage-open #rm_api_block[data-mt-native-panel] form div > h4:first-child:has(+ select:last-child, + select + .select2:last-child),
+body.mt-stage-open #AdvancedFormatting[data-mt-native-panel] [name="tokenizerSelectorBlock"] > h4 {
+    margin: 0;
+    border: 0;
+    padding: 0;
+    color: inherit;
+}
+
+body.mt-stage-open #rm_api_block[data-mt-native-panel] form div:has(> h4:first-child + select + .select2:last-child) > .select2 {
+    grid-column: 2;
+    grid-row: 1;
+    max-width: 100%;
+}
+
+body.mt-stage-open #rm_api_block[data-mt-native-panel] .online_status {
+    border-block-start: 1px solid var(--mt-detail-line, #9b8279);
+    margin-block-start: 1rem;
+    padding-block: .45rem;
+}
+
+/* Advanced formatting keeps each template's native editor and toolbar together. */
+body.mt-stage-open #AdvancedFormatting[data-mt-native-panel] > .spaceEvenly {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--mt-config-section-gap);
+}
+
+body.mt-stage-open #AdvancedFormatting[data-mt-native-panel] :is(#ContextSettings, #InstructSettingsColumn, #SystemPromptColumn) {
+    min-width: 0;
+}
+
+body.mt-stage-open #AdvancedFormatting[data-mt-native-panel] :is(#af_master_import, #af_master_export) {
+    white-space: normal;
+}
+
+body.mt-stage-open #AdvancedFormatting[data-mt-native-panel] :is(#ContextSettings, #InstructSettingsColumn, #SystemPromptColumn)
+:is(input, select, textarea) {
+    min-width: 0;
+    max-width: 100%;
+}
+
+body.mt-stage-open #AdvancedFormatting[data-mt-native-panel] :is(#ContextSettings, #InstructSettingsColumn, #SystemPromptColumn) textarea {
+    width: 100%;
+    margin-block-end: .65rem;
+}
+
+body.mt-stage-open #AdvancedFormatting[data-mt-native-panel] #InstructSequencesColumn details {
+    border-block-end: 1px solid var(--mt-detail-line, #9b8279);
+    padding-block: .35rem;
+}
+
+body.mt-stage-open #AdvancedFormatting[data-mt-native-panel] #InstructSequencesColumn summary {
+    padding-block: .35rem;
+    color: var(--mt-detail-accent, #bdd9eb);
+    cursor: pointer;
+}
+
+body.mt-stage-open #AdvancedFormatting[data-mt-native-panel]
+label.checkbox_label:has(> input[type="checkbox"] + small):not(:is(h4 *)) {
+    min-height: 2.25rem;
+    border-block-end: 1px solid var(--mt-detail-line, #9b8279);
+}
+
+/* User preferences read downward through display, character and chat groups. */
+body.mt-stage-open #user-settings-block[data-mt-native-panel] [name="userSettingsRowOne"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: .75rem;
+}
+
+body.mt-stage-open #user-settings-block[data-mt-native-panel] #UI-language-block {
+    grid-row: 2;
+    grid-column: 1 / -1;
+}
+
+body.mt-stage-open #user-settings-block[data-mt-native-panel] #version_display {
+    grid-row: 1;
+    grid-column: 2;
+    color: var(--mt-detail-muted, #bcaaa1);
+    text-align: end;
+}
+
+body.mt-stage-open #user-settings-block[data-mt-native-panel] #user-settings-block-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--mt-config-section-gap);
+}
+
+body.mt-stage-open #user-settings-block[data-mt-native-panel]
+:is(#UI-language-block, [name="AvatarAndChatDisplay"] > div, [name="ChatMessageHandlingToggles"] > div:has(> select)) {
+    display: grid;
+    grid-template-columns: var(--mt-config-columns);
+    align-items: center;
+    min-height: var(--mt-config-row);
+    border-block-end: 1px solid var(--mt-detail-line, #9b8279);
+    padding-block: .32rem;
+}
+
+body.mt-stage-open #user-settings-block[data-mt-native-panel] #ui_language_select {
+    width: 100%;
+    min-width: 0;
+}
+
+body.mt-stage-open #user-settings-block[data-mt-native-panel]
+#user-settings-block-content .checkbox_label:has(> input:is([type="checkbox"], [type="radio"])) {
+    flex-direction: row-reverse;
+    justify-content: space-between;
+    gap: .75rem;
+    min-height: 2.25rem;
+    border-block-end: 1px solid var(--mt-detail-line, #9b8279);
+    margin: 0;
+    padding-block: .2rem;
+}
+
+body.mt-stage-open #user-settings-block[data-mt-native-panel] :is(#settingsSearch, #customCSS) {
+    min-width: 0;
+    max-width: 100%;
+}
+
+body.mt-stage-open #user-settings-block[data-mt-native-panel] #power-user-option-checkboxes {
+    width: 100%;
+}
+
+body.mt-stage-open :is(#left-nav-panel, #user-settings-block)[data-mt-native-panel]
+:is(.range-block:has(> .range-block-title + .range-block-range-and-counter), [name="AvatarAndChatDisplay"] > div, .checkbox_label):focus-within {
+    background: var(--mt-detail-row-hover, rgb(190 217 234 / 8%));
+}
+
+@media (max-width: 760px) {
+    body.mt-stage-open :is(#left-nav-panel, #rm_api_block, #AdvancedFormatting, #user-settings-block)[data-mt-native-panel] {
+        --mt-config-columns: minmax(0, 1fr) minmax(8rem, 50%);
+    }
+
+    body.mt-stage-open #user-settings-block[data-mt-native-panel] [name="userSettingsRowOne"] {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    body.mt-stage-open #user-settings-block[data-mt-native-panel] #version_display {
+        grid-row: 3;
+        grid-column: 1;
+        margin-block-end: .25rem;
+        text-align: start;
+    }
+
+    body.mt-stage-open #user-settings-block[data-mt-native-panel] #settingsSearch {
+        flex-basis: 100%;
+    }
+}

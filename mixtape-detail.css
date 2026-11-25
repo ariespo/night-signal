@@ -1,0 +1,195 @@
+body.mt-stage-open [data-mt-native-panel] {
+    --mt-detail-line: rgb(231 203 185 / 35%);
+    --mt-detail-accent: #d6e7f0;
+    --mt-detail-muted: #cfb9aa;
+    --mt-detail-row-hover: rgb(204 224 239 / 10%);
+    --mt-detail-field: rgb(18 25 31 / 76%);
+    --mt-detail-action: #344959;
+    color: #f1dacb;
+    color-scheme: dark;
+}
+
+body.mt-stage-open :is(#left-nav-panel, #right-nav-panel, .drawer-content).openDrawer[data-mt-native-panel] {
+    background: linear-gradient(110deg, rgb(18 15 16 / 41%), rgb(18 15 16 / 65%) 62%, rgb(18 15 16 / 52%));
+    border-color: transparent;
+    box-shadow: none;
+    scrollbar-color: #a39186 transparent;
+}
+
+body.mt-stage-open [data-mt-native-panel] [data-mt-detail-heading] {
+    flex: 0 0 auto;
+    width: fit-content;
+    max-width: 100%;
+    min-height: 0;
+    margin: 0 0 clamp(0.65rem, 2.1dvh, 1.15rem);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #f5dbca;
+    font: 800 clamp(1.85rem, 3vw, 3.5rem)/1.13 var(--mt-title-face, system-ui);
+    letter-spacing: -0.025em;
+    text-shadow: 0 1px 5px rgb(17 9 8 / 75%);
+    overflow-wrap: anywhere;
+}
+
+body.mt-stage-open [data-mt-detail-heading] :is(.notes-link, .note-link-span) {
+    font-size: 0.48em;
+    color: var(--mt-detail-muted);
+}
+
+body.mt-stage-open [data-mt-native-panel]:not(#rm_extensions_block) :where(h4, .standoutHeader, .userSettingsInnerExpandable) {
+    border: 0;
+    border-radius: 0;
+    border-bottom: 1px solid var(--mt-detail-line);
+    padding-block: 0.45rem;
+    background: none;
+    box-shadow: none;
+    color: var(--mt-detail-muted);
+}
+
+body.mt-stage-open [data-mt-native-panel]:not(#rm_extensions_block) :where(.menu_button, .right_menu_button, input[type="button"]) {
+    border: 1px solid rgb(166 201 223 / 32%);
+    border-radius: 4px;
+    background: rgb(28 43 55 / 88%);
+    color: var(--mt-detail-accent);
+    box-shadow: none;
+    text-shadow: none;
+}
+
+body.mt-stage-open [data-mt-native-panel]:not(#rm_extensions_block) :where(.menu_button, .right_menu_button, input[type="button"]):is(:hover, :focus-visible) {
+    border-color: rgb(166 201 223 / 65%);
+    background: var(--mt-detail-action);
+    color: #fff5ec;
+}
+
+body.mt-stage-open [data-mt-native-panel]:not(#rm_extensions_block) :where(input.text_pole, textarea, select, .select2-selection) {
+    min-width: 0;
+    border: 1px solid var(--mt-detail-line);
+    border-radius: 2px;
+    background-color: var(--mt-detail-field);
+    color: inherit;
+    box-shadow: none;
+}
+
+body.mt-stage-open [data-mt-native-panel] :where(input[type="checkbox"], input[type="radio"], input[type="range"]) {
+    accent-color: #adc7d9;
+}
+
+body.mt-stage-open [data-mt-native-panel] [data-mt-rotator-row],
+body.mt-stage-open [data-mt-native-panel] .mt-detail-toggle-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(10rem, 48%);
+    gap: 0.55rem 0.9rem;
+    align-items: center;
+    min-height: 43px;
+    padding-block: 0.24rem;
+    border-bottom: 1px solid rgb(231 203 185 / 18%);
+}
+
+body.mt-stage-open [data-mt-native-panel] :is([data-mt-rotator-row], .mt-detail-toggle-row):is(:hover, :focus-within) {
+    background: var(--mt-detail-row-hover);
+}
+
+body.mt-stage-open [data-mt-native-panel] .mt-detail-toggle-row > label {
+    position: relative;
+    min-width: 0;
+    margin: 0;
+}
+
+body.mt-stage-open [data-mt-native-panel] .mt-detail-toggle-row > label input[type="checkbox"] {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    margin: 0;
+    clip-path: inset(50%);
+}
+
+body.mt-stage-open [data-mt-native-panel] .mt-detail-toggle-row:has(input:focus-visible) {
+    outline: 2px solid var(--mt-detail-accent);
+    outline-offset: 2px;
+}
+
+body.mt-stage-open [data-mt-native-panel] .mt-rotator {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 34px;
+    align-items: center;
+    gap: clamp(0.25rem, 0.65vw, 0.65rem);
+    min-width: 0;
+    width: 100%;
+    text-align: center;
+    font: 700 1rem/1.2 var(--mt-panel-face, system-ui);
+}
+
+body.mt-stage-open [data-mt-native-panel] .mt-rotator-arrow {
+    display: inline-grid;
+    place-items: center;
+    min-height: 34px;
+    width: 34px;
+    padding: 0;
+    border: 1px solid #90a6b6;
+    border-radius: 4px;
+    background: #758d9e;
+    color: #f8e2d3;
+    box-shadow: inset 0 1px rgb(255 255 255 / 14%);
+    font: 700 1.15rem/1 system-ui;
+    text-shadow: none;
+    cursor: pointer;
+}
+
+body.mt-stage-open [data-mt-native-panel] .mt-rotator-arrow:not([aria-disabled="true"]):is(:hover, :focus-visible) {
+    background: #a4bed0;
+    color: #101a22;
+}
+
+body.mt-stage-open [data-mt-native-panel] .mt-rotator-arrow[aria-disabled="true"] {
+    border-color: #45545e;
+    background: #28343e;
+    color: #a49790;
+    cursor: default;
+}
+
+body.mt-stage-open [data-mt-native-panel] .mt-rotator > select {
+    appearance: none;
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    margin: 0;
+    padding-inline: 0.25rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: none;
+    color: #f5dfcf;
+    text-align: center;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+body.mt-stage-open [data-mt-native-panel] .mt-rotator > select:focus-visible {
+    border-color: var(--mt-detail-line);
+}
+
+body.mt-stage-open [data-mt-native-panel] .mt-rotator option {
+    color: #f5dfcf;
+    background: #20272d;
+}
+
+@media (max-width: 760px) {
+    body.mt-stage-open :is(#left-nav-panel, #right-nav-panel, .drawer-content).openDrawer[data-mt-native-panel] {
+        background: rgb(20 16 17 / 76%);
+    }
+
+    body.mt-stage-open [data-mt-native-panel] :is([data-mt-rotator-row], .mt-detail-toggle-row) {
+        grid-template-columns: minmax(0, 1fr) minmax(8.25rem, 53%);
+        gap: 0.45rem;
+    }
+
+    body.mt-stage-open [data-mt-native-panel] .mt-rotator {
+        grid-template-columns: 36px minmax(0, 1fr) 36px;
+    }
+
+    body.mt-stage-open [data-mt-native-panel] .mt-rotator-arrow {
+        min-height: 36px;
+        width: 36px;
+    }
+}

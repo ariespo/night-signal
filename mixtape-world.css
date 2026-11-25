@@ -1,0 +1,390 @@
+body.mt-stage-open #WorldInfo[data-mt-native-panel] {
+    --mt-world-rule: rgb(213 188 167 / 43%);
+    --mt-world-muted: #c5b1a5;
+    --mt-world-field: rgb(19 27 33 / 82%);
+    --mt-world-button: #293b46;
+    --mt-world-border: #68808e;
+    --mt-world-gap: clamp(.45rem, 1.1vw, .9rem);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wi-holder {
+    margin: 0 !important;
+    min-inline-size: 0;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiTopBlock {
+    display: grid;
+    gap: 0;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiTopBlock > .range-block {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    align-items: center;
+    gap: var(--mt-world-gap);
+    margin: 0;
+    padding: .65rem 0;
+    border-block-end: 1px solid var(--mt-world-rule);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiTopBlock > .range-block > .range-block-title {
+    margin: 0;
+    text-align: start;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiTopBlock > .range-block > .range-block-title small {
+    font: 700 clamp(.95rem, 1.35vw, 1.2rem)/1.35 var(--mt-title-face);
+    color: var(--mt-world-muted);
+}
+
+/* Keep the native toggle and content as siblings, with the expanded sheet using both columns. */
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiTopBlock > .range-block > .inline-drawer {
+    display: contents;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiTopBlock > .range-block > .inline-drawer > .inline-drawer-content {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] :is(.standoutHeader.inline-drawer-toggle, .world_entry_edit .inline-drawer-header-pointer) {
+    min-block-size: 2.15rem;
+    margin: 0;
+    padding: .28rem .65rem;
+    border: 1px solid var(--mt-world-border);
+    border-radius: 3px;
+    background: var(--mt-world-button);
+    color: var(--mt-blue);
+    box-shadow: none;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] :is(.standoutHeader.inline-drawer-toggle, .world_entry_edit .inline-drawer-header-pointer):hover {
+    background: #39505e;
+    color: #fff;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiActivationSettings {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+    align-items: start;
+    gap: clamp(.8rem, 2.2vw, 2rem);
+    padding: .28rem 0;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] :is(#wiSliders, #wiCheckboxes) {
+    display: grid;
+    align-self: start;
+    gap: 0;
+    min-inline-size: 0;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiSliders > div {
+    display: grid;
+    grid-template-columns: minmax(7.5em, 1.5fr) minmax(3em, 1fr) 4.4em;
+    min-inline-size: 0;
+    gap: .45rem;
+    min-block-size: 2.35rem;
+    padding: .28rem 0;
+    border-block-start: 1px solid var(--mt-world-rule);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiSliders > div > :is(select, .mt-rotator) {
+    grid-column: 2 / -1;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiSliders :is(.neo-range-slider, .neo-range-input, #world_info_character_strategy) {
+    width: 100%;
+    min-inline-size: 0;
+    margin-inline: 0;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiCheckboxes > :is(label, .mt-detail-toggle-row) {
+    min-block-size: 2.35rem;
+    padding: .28rem 0;
+    border-block-start: 1px solid var(--mt-world-rule);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiCheckboxes > label {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    justify-content: space-between;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiCheckboxes > label > input[type="checkbox"] {
+    order: 1;
+    flex: 0 0 auto;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiCheckboxes label > small {
+    white-space: normal;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .checkbox :is(span, small),
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiActivationSettings small {
+    line-height: 1.35;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiActivationSettings > :is(#wiSliders, #wiCheckboxes) small {
+    color: var(--mt-ink);
+    font-size: clamp(.9rem, 1.12vw, 1.05rem);
+    font-weight: 600;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #world_popup {
+    margin-block-start: .75rem;
+    min-inline-size: 0;
+    overflow: visible;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #world_popup > hr {
+    display: none;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #world_popup > .flex-container {
+    gap: var(--mt-world-gap);
+    margin: 0;
+    padding: .55rem 0;
+    border-block-end: 1px solid var(--mt-world-rule);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] :is(#world_editor_select, #world_editor_select + .select2-container, #world_info_search, #world_info_sort_order) {
+    min-inline-size: min(100%, 8.5rem);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] :is(.select2-selection--single, .select2-selection--multiple, .world_entry_edit .text_pole, #world_info_search, #world_info_sort_order, #world_editor_select) {
+    min-block-size: 2rem;
+    border: 1px solid var(--mt-world-rule);
+    border-radius: 3px;
+    background: var(--mt-world-field);
+    color: var(--mt-ink);
+    box-shadow: none;
+}
+
+body.mt-stage-open:has(#WorldInfo[data-mt-native-panel]) > .select2-container .select2-dropdown {
+    border-color: #68808e !important;
+    border-radius: 3px;
+    background: #172229;
+    color: var(--mt-ink);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] :is(#world_popup .menu_button, .world_entry_edit .editor_maximize, .paginationjs-pages li a) {
+    border-color: var(--mt-world-border);
+    border-radius: 3px;
+    background: var(--mt-world-button);
+    color: var(--mt-blue);
+    box-shadow: none;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #world_popup > .flex-container > .menu_button {
+    min-block-size: 2rem;
+    min-inline-size: 2rem;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] :is(#world_popup .menu_button.redWarningBG, .delete_entry_button) {
+    border-color: #926e66;
+    background: #432c28;
+    color: #ffd5c8;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #world_popup .menu_button:hover {
+    filter: brightness(1.35);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #world_popup_entries_list {
+    min-inline-size: 0;
+    margin-block-start: .25rem;
+    overflow: visible;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #world_popup_entries_list:empty {
+    block-size: auto;
+    padding: .65rem 0;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] #WIEntryHeaderTitlesPC {
+    padding-block: .45rem;
+    color: var(--mt-world-muted);
+    font-family: var(--mt-title-face);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .wi-card-entry {
+    margin: 0;
+    padding: .45rem 0;
+    border: 0;
+    border-block-start: 1px solid var(--mt-world-rule);
+    border-radius: 0;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .wi-card-entry > .inline-drawer > .inline-drawer-header {
+    min-block-size: 2.5rem;
+    background: transparent;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .wi-card-entry :is(.world_entry_thin_controls, .WIEntryTitleAndStatus, .WIEnteryHeaderControls) {
+    min-inline-size: 0;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .wi-card-entry .world_entry_thin_controls {
+    width: auto;
+    flex: 1 1 0;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .wi-card-entry .inline-drawer-header textarea[name="comment"] {
+    min-block-size: 2rem;
+    padding: .32rem .4rem;
+    border: 1px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    font-weight: 650;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .wi-card-entry .inline-drawer-header textarea[name="comment"]:focus {
+    border-color: var(--mt-world-rule);
+    background: var(--mt-world-field);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .wi-card-entry .inline-drawer-header :is(select, input[type="number"]) {
+    min-inline-size: 0;
+    min-block-size: 1.85rem;
+    border: 1px solid var(--mt-world-rule);
+    border-radius: 3px;
+    color: var(--mt-ink);
+    background: var(--mt-world-field);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .wi-card-entry .inline-drawer-header input[type="number"] {
+    width: clamp(3.0rem, 5.5vw, 4.5rem);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .world_entry_edit {
+    display: block;
+    min-inline-size: 0;
+    margin-block: .45rem .15rem;
+    padding: .65rem clamp(.55rem, 1.3vw, 1.05rem) .85rem;
+    border-inline-start: 2px solid var(--mt-world-rule);
+    background: rgb(19 17 17 / 56%);
+    color: var(--mt-ink);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .world_entry_edit > .flex-container {
+    gap: var(--mt-world-gap);
+    margin-block-end: .7rem;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .world_entry_edit :is([name="keywordsAndLogicBlock"], [name="perEntryOverridesBlock"]) {
+    align-items: start;
+    gap: .45rem var(--mt-world-gap);
+    min-inline-size: 0;
+    padding-block: .35rem .55rem;
+    border-block-end: 1px solid var(--mt-world-rule);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .world_entry_edit :is(.world_entry_form_control, .range-block-range) {
+    min-inline-size: 0;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .world_entry_edit :is(.keyprimary, .keysecondary) {
+    min-inline-size: min(100%, 10rem);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .world_entry_edit .world_entry_form_control > small {
+    margin-block-end: .2rem;
+    text-align: start;
+    color: var(--mt-world-muted);
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .world_entry_edit [name="contentAndCharFilterBlock"] {
+    flex-basis: 100%;
+    min-inline-size: 0;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .world_entry_edit [name="contentAndCharFilterBlock"] > div > label > small > .flex-container {
+    flex-wrap: wrap;
+    gap: .25rem var(--mt-world-gap);
+    margin-block-end: .45rem;
+}
+
+body.mt-stage-open #WorldInfo[data-mt-native-panel] .world_entry_edit textarea[name="content"] {
+    min-block-size: 6.5rem;
+    padding: .5rem .65rem;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+@media (max-width: 1000px) {
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiActivationSettings {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] #WIEntryHeaderTitlesPC {
+        display: none;
+    }
+
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] .wi-card-entry .WIEntryHeaderTitleMobile {
+        display: inline;
+    }
+
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] .wi-card-entry :is(.WIEntryTitleAndStatus, .WIEnteryHeaderControls) {
+        flex: 1 1 100%;
+    }
+}
+
+@media (max-width: 630px) {
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiTopBlock > .range-block {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] #wiSliders > div {
+        grid-template-columns: minmax(6.5em, 1fr) minmax(2em, .75fr) 4em;
+    }
+
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] #world_popup > .flex-container {
+        gap: .4rem .5rem;
+    }
+
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] #world_info_search {
+        flex-basis: 100%;
+    }
+
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] .wi-card-entry > .inline-drawer > .inline-drawer-header {
+        flex-wrap: wrap;
+    }
+
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] .wi-card-entry .inline-drawer-header > .world_entry_thin_controls {
+        align-items: flex-start;
+        flex: 1 0 100%;
+        order: -1;
+    }
+
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] .wi-card-entry .inline-drawer-header > .drag-handle {
+        margin-inline-end: auto;
+    }
+
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] .wi-card-entry :is(.inline-drawer-icon, .killSwitch) {
+        margin-block-start: .42rem;
+    }
+
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] .WIEnteryHeaderControls {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .4rem;
+    }
+
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] .WIEnteryHeaderControls .world_entry_form_control {
+        display: grid;
+        min-inline-size: 0;
+    }
+
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] .WIEnteryHeaderControls .world_entry_form_control > :is(select, input[type="number"]) {
+        width: 100%;
+    }
+
+    body.mt-stage-open #WorldInfo[data-mt-native-panel] .world_entry_edit [name="perEntryOverridesBlock"] > .world_entry_form_control {
+        flex-basis: 40%;
+    }
+}
