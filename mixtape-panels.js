@@ -25,7 +25,7 @@ const confirmSelector = [
     '.inline-drawer-toggle', 'summary', 'input[type="checkbox"]', 'input[type="radio"]',
 ].join(',');
 
-export function mountPanelTheme({ document, onPanel, onCue }) {
+export function mountPanelTheme({ document, onPanel, onCue, onOpenFailed }) {
     const win = document.defaultView;
     const panels = new Map();
     for (const [id, label, nativeId] of nativePanels) {
@@ -89,9 +89,11 @@ export function mountPanelTheme({ document, onPanel, onCue }) {
         const duration = win.getComputedStyle(document.body).getPropertyValue('--animation-duration').trim();
         const milliseconds = (Number.parseFloat(duration) || 0) * (duration.endsWith('ms') ? 1 : 1000);
         pendingTimer = win.setTimeout(() => {
-            if (isOpen(panel)) setActive(panel);
+            const opened = isOpen(panel);
+            if (opened) setActive(panel);
             else if (active && !isOpen(active)) setActive(null);
             finishOpening();
+            if (!opened) onOpenFailed?.(panel.id);
         }, Math.max(400, milliseconds + 175));
     }
 

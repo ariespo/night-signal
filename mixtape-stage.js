@@ -27,6 +27,10 @@ function createButton(doc, label, className = '') {
 
 export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTitle, isSoundOn, toggleSound }) {
     const win = doc.defaultView;
+    const handoff = doc.createElement('div');
+    handoff.className = 'mt-stage-handoff';
+    handoff.hidden = true;
+    handoff.setAttribute('aria-hidden', 'true');
     const decor = doc.createElement('div');
     decor.className = 'mt-scene-layer';
     decor.hidden = true;
@@ -71,7 +75,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     const sound = createButton(doc, '声音关', 'mt-stage-sound');
     sound.setAttribute('aria-pressed', 'false');
     controls.append(nav, returnButton, rotate, sensor, sound);
-    doc.body.append(decor, controls);
+    doc.body.append(handoff, decor, controls);
 
     const lifecycle = new AbortController();
     const listen = { signal: lifecycle.signal };
@@ -82,6 +86,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     let caseBox;
     let fromTitle = false;
     let titleTimer;
+    let titleOpening;
     let drag;
     let suppressBackdropClick = false;
     let navFocused = false;
@@ -261,6 +266,23 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         return true;
     }
 
+    function coverHandoff(visible) {
+        handoff.hidden = !visible;
+        doc.body.classList.toggle('mt-stage-handoff-active', visible);
+    }
+
+    function failTitleOpening(id) {
+        if (titleOpening?.id !== id) return;
+        const { onFailure } = titleOpening;
+        titleOpening = undefined;
+        fromTitle = false;
+        try {
+            (onFailure ?? onTitle)();
+        } finally {
+            coverHandoff(false);
+        }
+    }
+
     function panelChanged(next) {
         const old = panel;
         panel = next;
@@ -281,8 +303,15 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
             audio.setSettingsActive(false);
             if (fromTitle) {
                 fromTitle = false;
+                coverHandoff(true);
                 titleTimer = win.setTimeout(() => {
-                    if (!panel && !lifecycle.signal.aborted) onTitle();
+                    if (!panel && !lifecycle.signal.aborted) {
+                        try {
+                            onTitle();
+                        } finally {
+                            coverHandoff(false);
+                        }
+                    }
                 }, reduce.matches || doc.body.classList.contains('reduced-motion') ? 0 : 360);
             }
             navFocused = false;
@@ -315,12 +344,15 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
             navFocused = true;
             rail.get(next.id)?.focus({ preventScroll: true });
         }
+        titleOpening = undefined;
+        coverHandoff(false);
     }
 
     const panels = mountPanelTheme({
         document: doc,
         onPanel: panelChanged,
         onCue: cue => audio.cue(cue),
+        onOpenFailed: failTitleOpening,
     });
 
     function stepPanel(direction) {
@@ -382,8 +414,17 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         stepPanel(direction);
     }, listen);
     doc.addEventListener('keydown', event => {
-        if (!panel || event.defaultPrevented || event.key !== 'Escape' || event.isComposing) return;
+        if (event.defaultPrevented || event.key !== 'Escape' || event.isComposing) return;
         if (doc.querySelector('dialog[open], .select2-container--open')) return;
+        if (titleOpening) {
+            event.preventDefault();
+            event.stopPropagation();
+            titleOpening.onFailure = onTitle;
+            fromTitle = true;
+            panels.close();
+            return;
+        }
+        if (!panel) return;
         const target = event.target;
         if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
         if (!(controls.contains(target) || panel.node.contains(target))) return;
@@ -441,10 +482,17 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
 
     return {
         refreshSound,
-        open(id, { returnToTitle = false } = {}) {
+        open(id, { returnToTitle = false, beforeOpen, onFailure } = {}) {
             fromTitle = returnToTitle;
             navFocused = false;
-            return openPanel(id);
+            if (beforeOpen) {
+                titleOpening = { id, onFailure };
+                coverHandoff(true);
+                beforeOpen();
+            }
+            const opened = openPanel(id);
+            if (!opened) failTitleOpening(id);
+            return opened;
         },
         dispose() {
             lifecycle.abort();
@@ -456,9 +504,10 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
             panels.dispose();
             orientation.dispose();
             scene?.dispose();
+            handoff.remove();
             decor.remove();
             controls.remove();
-            doc.body.classList.remove('mt-stage-open');
+            doc.body.classList.remove('mt-stage-open', 'mt-stage-handoff-active');
         },
     };
 }

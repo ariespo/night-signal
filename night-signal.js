@@ -394,25 +394,27 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
         }
     }
 
+    function openTitlePanel(id, message, { returnToTitle = false } = {}) {
+        return stage.open(id, {
+            returnToTitle,
+            beforeOpen: () => closeTitle({ keepAmbience: true }),
+            onFailure() {
+                showTitle();
+                setStatus(message);
+            },
+        });
+    }
+
     const actions = {
         close: () => { routedAudio.cue('back'); closeTitle(); },
         back: goBack,
         sound: () => toggleSound(),
         continue: () => context().getCurrentChatId() ? closeTitle({ focusChat: true }) : showRecent({ resume: true }),
         recent: () => showRecent(),
-        settings: () => {
-            closeTitle({ keepAmbience: true });
-            if (!stage.open('user-settings-button', { returnToTitle: true })) {
-                showTitle();
-                setStatus('酒馆设置暂时不可用。');
-            }
-        },
+        settings: () => openTitlePanel('user-settings-button', '酒馆设置暂时不可用。', { returnToTitle: true }),
         characters: () => {
-            closeTitle({ keepAmbience: true });
-            if (stage.open('rightNavHolder')) document.querySelector('#rm_button_characters')?.click();
-            else {
-                showTitle();
-                setStatus('角色管理暂时不可用。');
+            if (openTitlePanel('rightNavHolder', '角色管理暂时不可用。')) {
+                document.querySelector('#rm_button_characters')?.click();
             }
         },
         'open-chat': button => resumeChat(recentRows.get(button)),

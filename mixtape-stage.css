@@ -30,9 +30,18 @@ body.night-signal-theme {
     --mt-title-face: MixtapeTondu, MixtapeChineseStrong, "Microsoft YaHei", system-ui, sans-serif;
 }
 
+.mt-stage-handoff[hidden],
 .mt-scene-layer[hidden],
 .mt-stage-controls[hidden] {
     display: none !important;
+}
+
+.mt-stage-handoff {
+    position: fixed;
+    inset: 0;
+    z-index: 3999;
+    background: #090708;
+    touch-action: none;
 }
 
 .mt-scene-layer {

@@ -3,13 +3,15 @@ body.mt-stage-open #top-settings-holder {
     pointer-events: none;
 }
 
-body.mt-stage-open #top-settings-holder > .drawer > .drawer-toggle,
-body.mt-stage-open .drawer-content.openDrawer:is(
+body:is(.mt-stage-open, .mt-stage-handoff-active) #top-settings-holder > .drawer > :is(
+    .drawer-toggle, .drawer-content:not(.openDrawer[data-mt-native-panel])
+),
+body:is(.mt-stage-open, .mt-stage-handoff-active) .drawer-content:is(
     #left-nav-panel, #rm_api_block, #AdvancedFormatting, #WorldInfo, #user-settings-block,
     #Backgrounds, #rm_extensions_block, #PersonaManagement, #right-nav-panel
-):not([data-mt-native-panel]) {
-    visibility: hidden;
-    pointer-events: none;
+):not(.openDrawer[data-mt-native-panel]) {
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 
 body.mt-stage-open :is(#left-nav-panel, #right-nav-panel, .drawer-content).openDrawer[data-mt-native-panel] {
