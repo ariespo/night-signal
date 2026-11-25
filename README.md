@@ -16,7 +16,7 @@ GitHub 提供安装和更新。装好以后，页面、字体、图像和声音�
 
 **手动安装**。从 [GitHub Releases](https://github.com/ariespo/night-signal/releases) 下载并解压 `night-signal-1.5.0.zip`，将其中的 `night-signal` 文件夹放入 SillyTavern 的 `data/<用户名>/extensions/`。默认位置为 `data/default-user/extensions/night-signal/`。更新时覆盖同名文件并刷新酒馆。若曾手动安装且想改用 GitHub 更新，可先备份现有扩展目录并将它移到 `extensions/` 之外，再用上面的链接安装。
 
-**酒馆助手版**。在「酒馆助手 → 脚本 → 全局脚本 → 导入」选择 `night-signal-1.5.0-全局脚本.json`，导入后开启「夜间电台」。程序与素材都包含在 JSON 内。两种安装方式选择一种。
+**酒馆助手版**。从 [GitHub Releases](https://github.com/ariespo/night-signal/releases) 下载「酒馆助手全局脚本（JSON）」，在「酒馆助手 → 脚本 → 全局脚本 → 导入」选择下载的文件，然后开启「夜间电台」。原生扩展和全局脚本任选一种。
 
 **UI 主题预设**。在「用户设置 → UI 主题」导入 `Mixtape-夜间电台-主题.json` 可以应用聊天颜色与基础外观。标题菜单、转场、旋转与音频由扩展版或酒馆助手版加载。
 
