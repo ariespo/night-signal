@@ -121,7 +121,7 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
     let pageHeight = 0;
     let pageWidth = 0;
     let historyLoad = null;
-    let historyPrimed = false;
+    let historyPrefillStart = null;
 
     const spreadStart = page => Math.floor(page / layout.visibleLeaves) * layout.visibleLeaves;
     const lastSpread = () => spreadStart(Math.max(0, layout.pages - 1));
@@ -175,15 +175,18 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
         return Number.isInteger(id) && id > 0 ? id : 0;
     }
 
-    function remainingHistory() {
-        return chat.querySelector(':scope > #show_more_messages') ? firstRenderedFloor() : 0;
+    function markFloor(floorId = null) {
+        chat.querySelector(':scope > .mes[data-ns-reader-target]')?.removeAttribute('data-ns-reader-target');
+        if (floorId !== null) {
+            chat.querySelector(`:scope > .mes[mesid="${floorId}"]`)?.setAttribute('data-ns-reader-target', '');
+        }
     }
 
     function updatePageControls() {
         const first = spreadStart(currentPage);
         const last = Math.min(layout.pages, first + layout.visibleLeaves);
         const range = first + 1 === last ? last : `${first + 1}–${last}`;
-        const older = remainingHistory() > 0;
+        const older = firstRenderedFloor() > 0;
         pageNumber.value = layout.pages ? `页 ${range} / ${layout.pages}${older ? '+' : ''}` : '页 0 / 0';
         pageNumber.title = older ? '已加载页数。向前翻可继续加载更早的聊天。' : '阅读页码';
         const loading = Boolean(historyLoad);
@@ -199,6 +202,12 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
         if (!active || requestEpoch !== epoch) return false;
         const count = firstRenderedFloor() - through;
         if (count <= 0) return false;
+        const first = chat.querySelector(':scope > .mes[mesid]');
+        const marker = chat.querySelector(':scope > #show_more_messages');
+        // Native history inserts after this marker. The Helper may put it after the loaded messages.
+        if (first && marker && (first.compareDocumentPosition(marker) & window.Node.DOCUMENT_POSITION_FOLLOWING)) {
+            first.before(marker);
+        }
         const request = loadHistory(count);
         historyLoad = request;
         updatePageControls();
@@ -212,9 +221,11 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
     }
 
     function primeHistory() {
-        const older = remainingHistory();
-        if (historyPrimed || historyLoad || !layout.pages || layout.pages > layout.visibleLeaves || !older) return;
-        historyPrimed = true;
+        const older = firstRenderedFloor();
+        // The Helper can prune the DOM again after a new reply and remove the native load-more marker.
+        // Refill one batch per newly observed starting floor, even when that marker is missing.
+        if (!older || older === historyPrefillStart || historyLoad || !layout.pages || layout.pages > layout.visibleLeaves) return;
+        historyPrefillStart = older;
         void revealOlderFloors(Math.max(0, older - historyBatchSize), epoch).catch(error => {
             console.warn('[Night Signal] Could not load earlier chat pages', error);
         });
@@ -269,6 +280,7 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
 
     async function navigate(page, { animate = true } = {}) {
         if (!active || turning || historyLoad || page < 0 || page >= layout.pages) return;
+        markFloor();
         const current = spreadStart(currentPage);
         const target = spreadStart(page);
         const noMotion = reducedMotion.matches || context.powerUserSettings?.reduced_motion;
@@ -318,8 +330,9 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
 
     async function jumpToFloor(value) {
         if (value === '' || !active) return;
-        cancelTurn();
         const id = Number(value);
+        if (!Number.isInteger(id) || id < 0) return;
+        cancelTurn();
         const request = ++epoch;
         try {
             await revealOlderFloors(id, request);
@@ -329,6 +342,7 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
             if (target !== null) {
                 following = false;
                 showPage(target);
+                markFloor(id);
             }
         } catch (error) {
             console.warn('[Night Signal] Could not open chat floor', error);
@@ -342,17 +356,18 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
             await navigate(start - layout.visibleLeaves);
             return;
         }
-        const older = remainingHistory();
+        const older = firstRenderedFloor();
         if (!older) return;
         const request = epoch;
         following = false;
         anchor = captureReaderAnchor(chat, layout, currentPage);
-        historyPrimed = true;
+        historyPrefillStart = older;
         try {
             if (!await revealOlderFloors(Math.max(0, older - historyBatchSize), request) || request !== epoch) return;
             refreshLayout();
             const target = Math.max(0, spreadStart(currentPage) - layout.visibleLeaves);
             showPage(target);
+            markFloor();
         } catch (error) {
             console.warn('[Night Signal] Could not load earlier chat pages', error);
         }
@@ -395,7 +410,8 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
         epoch++;
         cancelTurn();
         floorCount = -1;
-        historyPrimed = false;
+        historyPrefillStart = null;
+        markFloor();
         anchor = null;
         currentPage = 0;
         following = true;
@@ -527,6 +543,7 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
                 if (type) context.eventSource.removeListener(type, callback);
             }
             document.body.classList.remove('night-signal-reader');
+            markFloor();
             delete shell.dataset.nsReaderLeaves;
             for (const property of ['scale', 'bg', 'text', 'em', 'quote', 'underline', 'page-height']) {
                 shell.style.removeProperty(`--ns-reader-${property}`);

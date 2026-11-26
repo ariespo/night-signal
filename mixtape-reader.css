@@ -1,3 +1,47 @@
+/* Layout ownership also applies when a theme uses more specific unlayered
+   !important selectors. The rules below remain a fallback for older WebViews. */
+@layer night-signal-reader-layout {
+  body.night-signal-reader #sheld {
+    display: flex !important;
+    flex-direction: column !important;
+    top: var(--topBarBlockSize, 0px) !important;
+    height: calc(100dvh - var(--topBarBlockSize, 0px) - 1px) !important;
+    max-height: none !important;
+  }
+
+  body.night-signal-reader #sheld > #chat {
+    display: block !important;
+    flex: 1 1 0 !important;
+    height: auto !important;
+    min-block-size: 0 !important;
+    max-block-size: none !important;
+    columns: auto var(--ns-reader-leaves) !important;
+    column-fill: auto !important;
+    column-gap: var(--ns-reader-gap) !important;
+    writing-mode: horizontal-tb !important;
+    direction: ltr !important;
+    scroll-behavior: auto !important;
+    overflow: hidden !important;
+  }
+
+  body.night-signal-reader #sheld > #chat > .mes {
+    position: relative !important;
+    break-inside: auto !important;
+  }
+
+  body.night-signal-reader #sheld > #chat > .mes > .mes_block {
+    overflow: visible !important;
+    break-inside: auto !important;
+  }
+
+  body.night-signal-reader #sheld > #chat > .mes,
+  body.night-signal-reader #sheld > #chat > .mes > .mes_block,
+  body.night-signal-reader #sheld > #chat > .mes > .mes_block > .mes_text {
+    content-visibility: visible !important;
+    contain: none !important;
+  }
+}
+
 body.night-signal-reader #sheld {
   --ns-reader-bg: #302925;
   --ns-reader-text: #f1ddc7;
@@ -61,6 +105,9 @@ body.night-signal-reader #sheld > #chat {
   columns: auto var(--ns-reader-leaves) !important;
   column-fill: auto !important;
   column-gap: var(--ns-reader-gap) !important;
+  writing-mode: horizontal-tb !important;
+  direction: ltr !important;
+  scroll-behavior: auto !important;
   padding: clamp(12px, 2vh, 24px) 0;
   border: 1px solid var(--ns-reader-edge);
   border-radius: 6px 6px 7px 7px;
@@ -116,7 +163,7 @@ body.night-signal-reader #sheld > #chat::after {
 
 body.night-signal-reader #sheld > #chat > .mes {
   display: block;
-  content-visibility: visible;
+  position: relative !important;
   margin: 0;
   padding: 7px var(--ns-reader-inset) 16px;
   border: 0;
@@ -136,6 +183,19 @@ body.night-signal-reader #sheld > #chat > .mes > .mes_block {
   margin: 0;
   overflow: visible !important;
   break-inside: auto !important;
+}
+
+/* Allow fragment geometry to be measured before offscreen messages have been shown. */
+body.night-signal-reader #sheld > #chat > .mes,
+body.night-signal-reader #sheld > #chat > .mes > .mes_block,
+body.night-signal-reader #sheld > #chat > .mes > .mes_block > .mes_text {
+  content-visibility: visible !important;
+  contain: none !important;
+}
+
+body.night-signal-reader #sheld > #chat > .mes[data-ns-reader-target] > .mes_block > .ch_name {
+  background: color-mix(in srgb, var(--ns-reader-quote) 15%, transparent);
+  box-shadow: 0 1px var(--ns-reader-quote);
 }
 
 body.night-signal-reader #sheld > #chat .mes_text {
