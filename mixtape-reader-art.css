@@ -1,0 +1,125 @@
+body.night-signal-reader #sheld:has(> .ns-reader-art) {
+  --ns-reader-spread-art: url("./assets/mixtape/reader-spread.webp");
+  --ns-reader-leaf-art: url("./assets/mixtape/reader-leaf.webp");
+  --ns-reader-page-art: var(--ns-reader-spread-art);
+  --ns-reader-case-rail: clamp(14px, 1.8vw, 27px);
+  --ns-reader-case-binding: var(--ns-reader-case-rail);
+  /* Source pixels of the top rail, right rail, bottom rail, and wider hinge. */
+  --ns-reader-case-slice: 50 37 52 125;
+  --ns-reader-disc-reveal: 0px;
+  --ns-reader-deco-inset: 8px;
+  --ns-reader-badge-size: clamp(44px, 5vw, 66px);
+  --ns-reader-barcode-height: 27px;
+  padding-inline: var(--ns-reader-case-binding) calc(var(--ns-reader-case-rail) + var(--ns-reader-disc-reveal));
+  padding-block-end: max(var(--ns-reader-case-rail), env(safe-area-inset-bottom));
+}
+
+body.night-signal-reader #sheld[data-ns-reader-leaves="1"]:has(> .ns-reader-art) {
+  --ns-reader-page-art: var(--ns-reader-leaf-art);
+  --ns-reader-badge-size: 38px;
+  --ns-reader-barcode-height: 0px;
+}
+
+body.night-signal-reader #sheld:has(> .ns-reader-art) > .ns-reader-header {
+  padding-block-end: calc(var(--ns-reader-case-rail) + 3px);
+}
+
+/* Keep the art fixed relative to the viewport and paginate the original chat above it. */
+body.night-signal-reader #sheld:has(> .ns-reader-art) > #chat {
+  padding-block-start: calc(var(--ns-reader-badge-size) + 2 * var(--ns-reader-deco-inset));
+  padding-block-end: calc(var(--ns-reader-barcode-height) + 2 * var(--ns-reader-deco-inset));
+  background:
+    var(--ns-reader-page-art) center / 100% 100% no-repeat,
+    var(--ns-reader-grain),
+    radial-gradient(ellipse at 27% 0%, rgb(253 223 190 / 6%), transparent 60%),
+    var(--ns-reader-bg);
+  background-blend-mode: overlay, soft-light, normal;
+}
+
+.ns-reader-art {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+body:not(.night-signal-reader) .ns-reader-art,
+.ns-reader-art[hidden] {
+  display: none;
+}
+
+.ns-reader-art > i {
+  position: absolute;
+  display: block;
+}
+
+.ns-reader-art > .ns-reader-art-case {
+  z-index: 31;
+  inset: calc(var(--ns-reader-art-top, 44px) - var(--ns-reader-case-rail) + 2px) 2px 2px;
+  box-sizing: border-box;
+  border: var(--ns-reader-case-rail) solid transparent;
+  border-inline-start-width: var(--ns-reader-case-binding);
+  border-image-source: url("./assets/mixtape/reader-case.webp");
+  border-image-slice: var(--ns-reader-case-slice);
+  border-image-repeat: stretch;
+}
+
+.ns-reader-art > .ns-reader-art-disc {
+  --ns-reader-disc-diameter: min(575px, calc(var(--ns-reader-art-height, 0px) * 0.89));
+  z-index: 29;
+  top: calc(var(--ns-reader-art-top, 0px) + (var(--ns-reader-art-height, 0px) - var(--ns-reader-disc-diameter)) / 2);
+  left: calc(var(--ns-reader-art-left, 0px) + var(--ns-reader-art-width, 0px) - var(--ns-reader-disc-diameter) + var(--ns-reader-disc-reveal) + 6px);
+  width: var(--ns-reader-disc-diameter);
+  height: var(--ns-reader-disc-diameter);
+  background: url("./assets/mixtape/reader-disc.webp") center / contain no-repeat;
+}
+
+.ns-reader-art > .ns-reader-art-station {
+  z-index: 31;
+  top: calc(var(--ns-reader-art-top, 0px) + var(--ns-reader-deco-inset));
+  left: calc(var(--ns-reader-art-left, 0px) + var(--ns-reader-art-width, 0px) - var(--ns-reader-badge-size) - var(--ns-reader-deco-inset) - 5px);
+  width: var(--ns-reader-badge-size);
+  height: var(--ns-reader-badge-size);
+  background: url("./assets/mixtape/reader-station.webp") center / contain no-repeat;
+  filter: drop-shadow(1px 2px 1px rgb(0 0 0 / 43%));
+}
+
+.ns-reader-art > .ns-reader-art-barcode {
+  z-index: 31;
+  top: calc(var(--ns-reader-art-top, 0px) + var(--ns-reader-art-height, 0px) - var(--ns-reader-barcode-height) - var(--ns-reader-deco-inset));
+  left: calc(var(--ns-reader-art-left, 0px) + var(--ns-reader-deco-inset) + 6px);
+  width: calc(var(--ns-reader-barcode-height) * 2.65);
+  height: var(--ns-reader-barcode-height);
+  background: url("./assets/mixtape/reader-barcode.webp") center / contain no-repeat;
+  filter: drop-shadow(1px 2px 1px rgb(0 0 0 / 38%));
+}
+
+#sheld[data-ns-reader-leaves="1"] .ns-reader-art > :is(.ns-reader-art-disc, .ns-reader-art-barcode) {
+  display: none;
+}
+
+@media (min-width: 975px) {
+  body.night-signal-reader #sheld:has(> .ns-reader-art) {
+    --ns-reader-case-binding: clamp(42px, 5vw, 78px);
+    --ns-reader-disc-reveal: clamp(17px, 3vw, 40px);
+  }
+}
+
+@media (max-width: 974px) {
+  .ns-reader-art > .ns-reader-art-disc {
+    display: none;
+  }
+}
+
+@media (max-width: 660px) {
+  body.night-signal-reader #sheld:has(> .ns-reader-art) {
+    --ns-reader-case-rail: 10px;
+    --ns-reader-deco-inset: 6px;
+  }
+}
+
+@media (max-height: 535px) {
+  body.night-signal-reader #sheld:has(> .ns-reader-art) {
+    --ns-reader-badge-size: 0px;
+    --ns-reader-barcode-height: 0px;
+  }
+}

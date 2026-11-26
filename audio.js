@@ -51,6 +51,7 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
     let ambienceRequest;
     let enabled = false;
     let ambient = false;
+    let readerMusic = false;
     let settingsActive = false;
     let disposed = false;
     let volume = 0.65;
@@ -70,7 +71,7 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
     }
 
     function wantsTitleMusic() {
-        return ambient && !settingsActive && channelVolumes.music > 0 && canPlay();
+        return (ambient || readerMusic) && !settingsActive && channelVolumes.music > 0 && canPlay();
     }
 
     function loadSample(name) {
@@ -275,6 +276,11 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
             if (disposed) return;
             ambient = Boolean(value);
             syncPlayback();
+        },
+        setReaderMusic(value) {
+            if (disposed) return;
+            readerMusic = Boolean(value);
+            syncTitleMusic();
         },
         setSettingsActive(value) {
             if (disposed) return;

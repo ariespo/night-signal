@@ -1,7 +1,8 @@
-import { isGenerating, setActiveCharacter, setActiveGroup } from '/script.js';
+import { isGenerating, setActiveCharacter, setActiveGroup, showMoreMessages } from '/script.js';
 import { openGroupById } from '/scripts/group-chats.js';
 import { createAudio } from './audio.js';
 import { mountMixtapeStage } from './mixtape-stage.js';
+import { mountMixtapeReader } from './mixtape-reader.js';
 
 const settingsKey = 'nightSignal';
 const context = () => SillyTavern.getContext();
@@ -247,6 +248,44 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
         onTitle: showTitle,
     });
 
+    const readerItem = document.createElement('div');
+    readerItem.className = 'extension_container';
+    readerItem.setAttribute('role', 'listitem');
+    const readerToggle = document.createElement('button');
+    readerToggle.type = 'button';
+    readerToggle.className = 'night-signal-launcher';
+    readerItem.append(readerToggle);
+
+    function refreshReaderToggle(enabled) {
+        readerToggle.textContent = enabled ? '关闭歌词内页' : '打开歌词内页';
+        readerToggle.setAttribute('aria-pressed', String(enabled));
+    }
+
+    const reader = mountMixtapeReader(document, {
+        context: ctx,
+        stored: ctx.extensionSettings[settingsKey]?.reader,
+        save(value) {
+            ctx.extensionSettings[settingsKey] = { ...ctx.extensionSettings[settingsKey], reader: value };
+            ctx.saveSettingsDebounced();
+            refreshReaderToggle(value.enabled);
+        },
+        loadHistory: showMoreMessages,
+        openWorld: () => stage.open('WI-SP-button'),
+        async playTrack(playing) {
+            if (playing && !soundActive) {
+                if (!refreshSoundState(await audio.setEnabled(true))) return false;
+                preferences.soundEnabled = true;
+                savePreferences();
+            }
+            audio.setReaderMusic(playing);
+            return playing;
+        },
+    });
+    if (reader) {
+        refreshReaderToggle(reader.enabled);
+        readerToggle.addEventListener('click', () => reader.setEnabled(!reader.enabled), { signal: domEvents.signal });
+    }
+
     const selectable = () => [...dialog.querySelectorAll('.ns-page:not([hidden]) :is(.ns-entry, .ns-back):enabled')];
 
     function setStatus(text) {
@@ -362,6 +401,7 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
         sound.setAttribute('aria-pressed', String(enabled));
         sound.textContent = enabled ? '声音开' : '声音关';
         stage.refreshSound();
+        if (!enabled) reader?.stopTrack();
         return enabled;
     }
 
@@ -473,6 +513,7 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
     mixAudio(audio, preferences);
 
     menu.append(launcherItem);
+    if (reader) menu.append(readerItem);
     document.body.append(dialog);
     document.body.classList.add('night-signal-theme');
     const openOnStartup = () => {
@@ -484,12 +525,14 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
         if (deferStartup) ctx.eventSource.removeListener(ctx.eventTypes.APP_READY, openOnStartup);
         recentRequest?.abort();
         domEvents.abort();
+        reader?.dispose();
         stage.dispose();
         themeOptions?.remove();
         audio.dispose();
         if (dialog.open) dialog.close();
         dialog.remove();
         launcherItem.remove();
+        readerItem.remove();
         document.body.classList.remove('night-signal-theme');
     };
     shutdown = dispose;

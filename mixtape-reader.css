@@ -1,0 +1,596 @@
+body.night-signal-reader #sheld {
+  --ns-reader-bg: #302925;
+  --ns-reader-text: #f1ddc7;
+  --ns-reader-em: #dbc4ae;
+  --ns-reader-quote: #edbf8b;
+  --ns-reader-underline: #a7cddb;
+  --ns-reader-player: #a7cddb;
+  --ns-reader-scale: 1;
+  --ns-reader-leaves: 2;
+  --ns-reader-gap: 38px;
+  --ns-reader-inset: clamp(20px, 3.6vw, 66px);
+  --ns-reader-gold: #c89155;
+  --ns-reader-edge: rgb(224 196 162 / 42%);
+  --ns-reader-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", Georgia, SimSun, serif;
+  --ns-reader-grain: url("./assets/mixtape/reader-paper.webp") center / 620px 620px repeat;
+  width: min(1520px, calc(100% - 34px));
+  box-sizing: border-box;
+  padding: 0 clamp(9px, 1.35vw, 20px) max(8px, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(ellipse at 10% 85%, rgb(201 144 82 / 15%), transparent 32%),
+    radial-gradient(ellipse at 98% 12%, rgb(184 213 229 / 12%), transparent 36%),
+    linear-gradient(134deg, #292623, #131719 37%, #100e0e 71%, #292823);
+  border: 1px solid rgb(223 219 205 / 44%);
+  border-radius: 12px;
+  box-shadow:
+    inset 0 0 0 2px rgb(242 238 218 / 11%),
+    inset 0 0 0 5px rgb(0 0 0 / 53%),
+    inset 0 0 0 6px rgb(235 231 216 / 10%),
+    0 10px 30px rgb(0 0 0 / 38%);
+}
+
+body.night-signal-reader :is(#top-bar, #top-settings-holder) {
+  width: min(1520px, calc(100% - 34px));
+}
+
+body.night-signal-reader #sheld[data-ns-reader-leaves="1"] {
+  --ns-reader-leaves: 1;
+  --ns-reader-gap: 20px;
+  --ns-reader-inset: clamp(13px, 4vw, 25px);
+}
+
+body.night-signal-reader #sheld > #chat {
+  --SmartThemeBodyColor: var(--ns-reader-text);
+  --SmartThemeEmColor: var(--ns-reader-em);
+  --SmartThemeQuoteColor: var(--ns-reader-quote);
+  --SmartThemeUnderlineColor: var(--ns-reader-underline);
+  --SmartThemeShadowColor: transparent;
+  display: block;
+  flex: 1 1 0;
+  min-block-size: 0;
+  max-block-size: none;
+  column-count: var(--ns-reader-leaves);
+  column-fill: auto;
+  column-gap: var(--ns-reader-gap);
+  padding: clamp(12px, 2vh, 24px) 0;
+  border: 1px solid var(--ns-reader-edge);
+  border-radius: 6px 6px 7px 7px;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  overflow-anchor: none;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  color: var(--ns-reader-text);
+  text-shadow: none;
+  backdrop-filter: none;
+  box-shadow:
+    inset 0 0 28px rgb(0 0 0 / 23%),
+    0 2px #46392f,
+    0 3px rgb(193 158 120 / 70%),
+    0 5px 7px rgb(0 0 0 / 48%);
+  background:
+    linear-gradient(90deg, #776d60, #c9bbaa, #897865) center 29% / 2px 28px no-repeat,
+    linear-gradient(90deg, #776d60, #c9bbaa, #897865) center 71% / 2px 28px no-repeat,
+    linear-gradient(90deg,
+      transparent calc(50% - 17px),
+      rgb(0 0 0 / 24%) calc(50% - 2px),
+      rgb(0 0 0 / 64%) 50%,
+      rgb(243 207 164 / 10%) calc(50% + 2px),
+      transparent calc(50% + 20px)),
+    var(--ns-reader-grain),
+    radial-gradient(ellipse at 27% 0%, rgb(253 223 190 / 6%), transparent 53%),
+    var(--ns-reader-bg);
+  background-blend-mode: normal, normal, normal, soft-light, normal;
+}
+
+body.night-signal-reader #sheld[data-ns-reader-leaves="1"] > #chat {
+  background:
+    linear-gradient(90deg, rgb(0 0 0 / 38%), transparent 12px),
+    var(--ns-reader-grain),
+    radial-gradient(ellipse at 25% 0%, rgb(253 223 190 / 6%), transparent 61%),
+    var(--ns-reader-bg);
+  background-blend-mode: normal, soft-light, normal;
+}
+
+body.night-signal-reader #sheld > #chat::-webkit-scrollbar {
+  display: none;
+}
+
+/* The trailing column makes an unpaired last leaf reachable at the left edge. */
+body.night-signal-reader #sheld > #chat::after {
+  content: "";
+  display: block;
+  height: 1px;
+  break-before: column;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.night-signal-reader #sheld > #chat > .mes {
+  display: block;
+  content-visibility: visible;
+  margin: 0;
+  padding: 7px var(--ns-reader-inset) 16px;
+  border: 0;
+  background: transparent;
+  break-inside: auto;
+  font-size: calc(clamp(15px, 1.28vw, 20px) * var(--ns-reader-scale));
+}
+
+body.night-signal-reader #sheld > #chat > .mes.selected {
+  background: color-mix(in srgb, var(--ns-reader-quote) 16%, transparent);
+}
+
+body.night-signal-reader #sheld > #chat > .mes > .mes_block {
+  display: block;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  break-inside: auto;
+}
+
+body.night-signal-reader #sheld > #chat .mes_text {
+  clear: both;
+  margin: 0;
+  padding: 6px 0 0;
+  min-block-size: 0;
+  font-family: var(--ns-reader-serif);
+  font-size: inherit;
+  font-weight: 400;
+  line-height: 1.66;
+  overflow: visible;
+  orphans: 2;
+  widows: 2;
+}
+
+body.night-signal-reader #sheld > #chat .mes_text :where(p) {
+  margin-block: 0 0.68em;
+}
+
+body.night-signal-reader #sheld > #chat .mes_text :where(h1, h2, h3, h4) {
+  break-after: avoid;
+}
+
+body.night-signal-reader #sheld > #chat .mes_text :where(pre, table, img, iframe, .TH-render),
+body.night-signal-reader #sheld > #chat .mes :where(.mes_media_wrapper, .mes_file_wrapper, .ch_name, .edit_textarea) {
+  break-inside: avoid;
+}
+
+/* Keep oversized interactive content reachable without recreating its iframe. */
+body.night-signal-reader #sheld > #chat .mes :where(.TH-render, .mes_media_wrapper, .edit_textarea),
+body.night-signal-reader #sheld > #chat .mes_text :where(pre) {
+  max-inline-size: 100%;
+  max-block-size: max(92px, calc(var(--ns-reader-page-height, 400px) - 30px));
+  overflow: auto;
+}
+
+body.night-signal-reader #sheld > #chat .mes_text :where(img) {
+  max-block-size: max(64px, calc(var(--ns-reader-page-height, 400px) - 58px));
+  object-fit: contain;
+}
+
+body.night-signal-reader #sheld > #chat .mes :where(.mes_reasoning_details, .mes_media_wrapper, .mes_file_wrapper) {
+  clear: both;
+}
+
+body.night-signal-reader #sheld > #chat .edit_textarea {
+  max-block-size: max(70px, calc(var(--ns-reader-page-height, 280px) - 65px));
+}
+
+body.night-signal-reader #sheld > #chat > .mes > .mesAvatarWrapper {
+  float: left;
+  margin-inline-end: 10px;
+  padding-block-end: 0;
+}
+
+body.night-signal-reader #sheld > #chat > .mes .mesAvatarWrapper :is(.avatar, .avatar img) {
+  width: 34px;
+  height: 34px;
+  border-radius: 5px;
+}
+
+body.night-signal-reader #sheld > #chat > .mes .mesAvatarWrapper .avatar img {
+  border-color: var(--ns-reader-edge);
+  box-shadow: none;
+}
+
+body.night-signal-reader #sheld > #chat > .mes > .mes_block > .ch_name {
+  display: flex;
+  align-items: center;
+  min-block-size: 34px;
+  gap: 5px;
+  break-after: avoid;
+}
+
+/* Document mode and Hide Avatars both use !important for elements needed by the booklet. */
+body.night-signal-reader.documentstyle #sheld > #chat > .mes:not([is_system="true"], .smallSysMes) > .mesAvatarWrapper,
+body.night-signal-reader.hideChatAvatars #sheld > #chat > .mes:not([is_system="true"], .smallSysMes) .mesAvatarWrapper .avatar {
+  display: block !important;
+}
+
+body.night-signal-reader.documentstyle #sheld > #chat > .mes:not([is_system="true"], .smallSysMes) .ch_name .name_text {
+  display: inline !important;
+}
+
+body.night-signal-reader.documentstyle #sheld > #chat > .mes:not(:has(.edit_textarea)) .ch_name .mes_buttons:not([style*="display: none"]) {
+  display: flex !important;
+}
+
+body.night-signal-reader #sheld > #chat .ch_name .name_text {
+  color: var(--ns-reader-text);
+  font-size: 1.09em;
+}
+
+body.night-signal-reader #sheld > #chat > .mes[is_user="true"] > .mesAvatarWrapper {
+  float: right;
+  margin-inline: 10px 0;
+}
+
+body.night-signal-reader #sheld > #chat > .mes[is_user="true"] > .mes_block > .ch_name {
+  flex-direction: row-reverse;
+}
+
+body.night-signal-reader #sheld > #chat > .mes[is_user="true"] .ch_name > .flex1 {
+  justify-content: flex-end;
+  text-align: end;
+}
+
+body.night-signal-reader #sheld > #chat > .mes[is_user="true"] .name_text {
+  color: var(--ns-reader-player);
+}
+
+body.night-signal-reader #sheld > #chat > .mes[is_user="true"] .mes_text > :where(p:only-child) {
+  inline-size: fit-content;
+  margin-inline-start: auto;
+}
+
+body.night-signal-reader #sheld > #chat > #show_more_messages {
+  break-inside: avoid;
+}
+
+.ns-reader-header,
+.ns-reader-pages {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-inline-size: 0;
+  color: var(--ns-reader-text);
+}
+
+.ns-reader-header[hidden],
+.ns-reader-pages[hidden],
+.ns-reader-turn[hidden] {
+  display: none;
+}
+
+.ns-reader-header {
+  position: relative;
+  z-index: 31;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 8px 6px;
+}
+
+.ns-reader-brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.48em;
+  flex-shrink: 0;
+  color: var(--ns-reader-text);
+  font-size: clamp(15px, 1.6vw, 23px);
+  font-weight: 750;
+}
+
+.ns-reader-brand i {
+  color: var(--ns-reader-gold);
+  font-style: normal;
+  letter-spacing: -0.17em;
+  margin-inline-end: 0.25em;
+}
+
+.ns-reader-brand span {
+  border-inline-start: 1px solid var(--ns-reader-edge);
+  padding-inline-start: 0.7em;
+  font-size: 0.63em;
+  font-weight: 600;
+}
+
+.ns-reader-tools {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  min-inline-size: 0;
+  gap: 5px;
+}
+
+.ns-reader-header .ns-reader-track {
+  display: inline-flex;
+  align-items: center;
+  justify-content: start;
+  gap: 0.55em;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding-inline: 11px;
+  color: #ead4be;
+  background: linear-gradient(#232b2e, #161d20);
+  white-space: nowrap;
+}
+
+.ns-reader-track :first-child {
+  color: var(--ns-reader-player);
+}
+
+.ns-reader-track[aria-pressed="true"] {
+  border-color: rgb(167 205 219 / 54%);
+}
+
+.ns-reader-options {
+  position: relative;
+}
+
+.ns-reader-header :is(button, select, summary),
+.ns-reader-pages button {
+  box-sizing: border-box;
+  min-block-size: 34px;
+  margin: 0;
+  border: 1px solid rgb(226 198 164 / 24%);
+  border-radius: 6px;
+  padding: 3px 9px;
+  color: var(--ns-reader-text);
+  background: linear-gradient(#34302c, #211f1f);
+  font: inherit;
+  font-size: 0.88rem;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.ns-reader-header :is(select, summary) {
+  display: inline-flex;
+  align-items: center;
+}
+
+.ns-reader-header select {
+  min-inline-size: 0;
+  max-inline-size: min(14em, 40vw);
+  text-overflow: ellipsis;
+}
+
+.ns-reader-header summary::-webkit-details-marker {
+  display: none;
+}
+
+.ns-reader-header :is(button, select, summary):focus-visible,
+.ns-reader-pages button:focus-visible {
+  outline: 2px solid var(--ns-reader-player);
+  outline-offset: 2px;
+}
+
+.ns-reader-header :is(button, summary):hover,
+.ns-reader-pages button:not(:disabled):hover {
+  border-color: var(--ns-reader-gold);
+}
+
+.ns-reader-settings {
+  position: absolute;
+  inset-block-start: calc(100% + 5px);
+  inset-inline-end: 0;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  inline-size: min(235px, 74vw);
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid var(--ns-reader-edge);
+  border-radius: 7px;
+  color: var(--ns-reader-text);
+  background: #211e1b;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 58%);
+}
+
+.ns-reader-settings label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ns-reader-settings input[type="range"] {
+  inline-size: 108px;
+  accent-color: var(--ns-reader-gold);
+}
+
+.ns-reader-settings input[type="color"] {
+  inline-size: 34px;
+  block-size: 25px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ns-reader-edge);
+  border-radius: 4px;
+  background: transparent;
+}
+
+.ns-reader-pages {
+  position: relative;
+  justify-content: center;
+  padding: 7px 0 3px;
+}
+
+.ns-reader-pages button {
+  min-inline-size: 44px;
+  min-block-size: 36px;
+}
+
+.ns-reader-pages button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.ns-reader-pages :is([data-ns-previous], [data-ns-next]) {
+  font-size: 1.4rem;
+}
+
+.ns-reader-pages [data-ns-latest] {
+  position: absolute;
+  inset-inline-end: 0;
+}
+
+.ns-reader-pages [data-ns-page] {
+  min-inline-size: 6em;
+  text-align: center;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+
+body.night-signal-reader #sheld > #form_sheld {
+  flex: 0 0 auto;
+}
+
+body.night-signal-reader #sheld #send_form {
+  border-radius: 8px;
+  border-color: rgb(204 192 174 / 27%);
+  background: linear-gradient(#1e2123, #141617);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 75%);
+}
+
+body.night-signal-reader #sheld #send_textarea {
+  min-inline-size: 0;
+  color: var(--ns-reader-text);
+  text-shadow: none;
+}
+
+body.night-signal-reader #sheld #send_but {
+  width: max(54px, var(--bottomFormBlockSize));
+  border-radius: 5px;
+  color: #142229;
+  background: #87b4ca;
+  box-shadow: inset 0 1px rgb(230 245 255 / 32%);
+  opacity: 1;
+}
+
+body.night-signal-reader #sheld #send_but::before {
+  content: "发送";
+  font: 700 0.9rem/1 var(--mainFontFamily, system-ui);
+}
+
+.ns-reader-turn {
+  position: absolute;
+  left: var(--ns-reader-art-left);
+  top: var(--ns-reader-art-top);
+  width: var(--ns-reader-art-width);
+  height: var(--ns-reader-art-height);
+  z-index: 32;
+  pointer-events: none;
+  perspective: 1000px;
+  overflow: clip;
+}
+
+.ns-reader-turn-leaf {
+  position: absolute;
+  inset-block: 0;
+  inline-size: 50%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.ns-reader-turn-leaf[data-direction="next"] {
+  inset-inline-start: 50%;
+  transform-origin: left center;
+}
+
+.ns-reader-turn-leaf[data-direction="previous"] {
+  inset-inline-end: 50%;
+  transform-origin: right center;
+}
+
+#sheld[data-ns-reader-leaves="1"] .ns-reader-turn-leaf {
+  inset-inline: 0;
+  inline-size: 100%;
+}
+
+.ns-reader-turn-leaf::before,
+.ns-reader-turn-leaf::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--ns-reader-edge);
+  border-radius: 5px 8px 8px 5px;
+  background:
+    linear-gradient(90deg, rgb(0 0 0 / 49%), transparent 26% 72%, rgb(241 203 160 / 15%) 93%, rgb(244 218 180 / 32%)),
+    var(--ns-reader-grain),
+    var(--ns-reader-bg);
+  background-blend-mode: normal, soft-light;
+  backface-visibility: hidden;
+  box-shadow: 2px 4px 16px rgb(0 0 0 / 57%);
+}
+
+.ns-reader-turn-leaf::after {
+  transform: rotateY(180deg);
+}
+
+@media (max-width: 660px) {
+  body.night-signal-reader :is(#sheld, #top-bar, #top-settings-holder) {
+    width: calc(100% - 8px);
+  }
+
+  body.night-signal-reader #sheld {
+    padding-inline: 6px;
+  }
+
+  .ns-reader-header {
+    gap: 4px;
+    padding: 5px 2px;
+  }
+
+  .ns-reader-header :is(button, select, summary) {
+    padding-inline: 7px;
+    font-size: 0.78rem;
+  }
+
+  .ns-reader-header .ns-reader-tools {
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+
+  .ns-reader-header select {
+    max-inline-size: 36vw;
+  }
+
+  body.night-signal-reader #sheld > #chat .ch_name > .flex1,
+  body.night-signal-reader #sheld > #chat .ch_name > .flex1 > .flex-container {
+    min-inline-size: 0;
+  }
+
+  body.night-signal-reader #sheld > #chat .ch_name > .flex1 > .flex-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  body.night-signal-reader #sheld > #chat .mes[is_user="true"] .ch_name > .flex1 > .flex-container {
+    align-items: flex-end;
+  }
+
+  body.night-signal-reader #sheld > #chat .ch_name .name_text {
+    overflow-wrap: anywhere;
+  }
+
+  body.night-signal-reader #sheld > #chat .ch_name .timestamp {
+    max-inline-size: 100%;
+  }
+
+  .ns-reader-pages [data-ns-latest] {
+    position: static;
+  }
+}
+
+@media (pointer: coarse) {
+  .ns-reader-pages button,
+  .ns-reader-header :is(button, select, summary) {
+    min-block-size: 44px;
+  }
+}
