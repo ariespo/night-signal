@@ -14,7 +14,7 @@ GitHub 提供安装和更新。装好以后，页面、字体、图像和声音�
 
 ### 其他安装方式
 
-**手动安装**。从 [GitHub Releases](https://github.com/ariespo/night-signal/releases) 下载并解压 `night-signal-1.9.0.zip`，将其中的 `night-signal` 文件夹放入 SillyTavern 的 `data/<用户名>/extensions/`。默认位置为 `data/default-user/extensions/night-signal/`。更新时覆盖同名文件并刷新酒馆。若曾手动安装且想改用 GitHub 更新，可先备份现有扩展目录并将它移到 `extensions/` 之外，再用上面的链接安装。
+**手动安装**。从 [GitHub Releases](https://github.com/ariespo/night-signal/releases) 下载并解压 `night-signal-1.9.1.zip`，将其中的 `night-signal` 文件夹放入 SillyTavern 的 `data/<用户名>/extensions/`。默认位置为 `data/default-user/extensions/night-signal/`。更新时覆盖同名文件并刷新酒馆。若曾手动安装且想改用 GitHub 更新，可先备份现有扩展目录并将它移到 `extensions/` 之外，再用上面的链接安装。
 
 **酒馆助手版**。从 [GitHub Releases](https://github.com/ariespo/night-signal/releases) 下载「酒馆助手全局脚本（JSON）」，在「酒馆助手 → 脚本 → 全局脚本 → 导入」选择下载的文件，然后开启「夜间电台」。原生扩展和全局脚本任选一种。
 
@@ -22,7 +22,7 @@ GitHub 提供安装和更新。装好以后，页面、字体、图像和声音�
 
 ## 操作
 
-- 打开聊天后会进入歌词内页。大屏按左页、右页的顺序读，手机按单页读。底部箭头翻阅读页，「跳到楼层」按酒馆的消息编号定位。分页随字号和屏幕尺寸调整。
+- 打开聊天后会进入歌词内页。大屏按左页、右页的顺序读，手机按单页读。底部箭头翻阅读页，「跳到楼层」按酒馆的消息编号定位。分页随字号和屏幕尺寸调整。页数后的 `+` 表示还有更早的聊天，继续往前翻可加载。
 - 「阅读设置」可调字号、纸面颜色，以及正文、斜体、引号和下划线颜色。编辑消息和切换回复使用楼层原有的控件。「原生视图」可恢复酒馆聊天布局，魔杖菜单中的「打开歌词内页」可切回。
 - 「设置」和酒馆顶部原有的图标都可以打开唱片盒细页。顶部分类可以切换九个主题页面，独立渲染的选项通过酒馆的事件读写实际设置。使用左右箭头切换枚举和开关，拖动有内嵌读数的进度条调整范围参数。
 - 世界书可直接调激活参数和匹配规则，也可进入书库、条目列表、正文编辑和筛选。只滚动唱片盒中央的列表，标题、Hot Stuff 贴纸和底部两张标签固定在盒面。关键词和正文编辑由酒馆保存。

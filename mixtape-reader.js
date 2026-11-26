@@ -23,6 +23,7 @@ const colorSettings = [
     ['quote', '引号'],
     ['underline', '下划线'],
 ];
+const historyBatchSize = 24;
 
 function readPreferences(stored) {
     const preferences = { ...defaults };
@@ -119,6 +120,8 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
     let floorCount = -1;
     let pageHeight = 0;
     let pageWidth = 0;
+    let historyLoad = null;
+    let historyPrimed = false;
 
     const spreadStart = page => Math.floor(page / layout.visibleLeaves) * layout.visibleLeaves;
     const lastSpread = () => spreadStart(Math.max(0, layout.pages - 1));
@@ -167,14 +170,54 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
         floor.disabled = floorCount === 0;
     }
 
+    function firstRenderedFloor() {
+        const id = Number(chat.querySelector(':scope > .mes[mesid]')?.getAttribute('mesid'));
+        return Number.isInteger(id) && id > 0 ? id : 0;
+    }
+
+    function remainingHistory() {
+        return chat.querySelector(':scope > #show_more_messages') ? firstRenderedFloor() : 0;
+    }
+
     function updatePageControls() {
         const first = spreadStart(currentPage);
         const last = Math.min(layout.pages, first + layout.visibleLeaves);
         const range = first + 1 === last ? last : `${first + 1}–${last}`;
-        pageNumber.value = layout.pages ? `页 ${range} / ${layout.pages}` : '页 0 / 0';
-        previous.disabled = first <= 0;
-        next.disabled = first >= lastSpread();
-        latest.hidden = next.disabled;
+        const older = remainingHistory() > 0;
+        pageNumber.value = layout.pages ? `页 ${range} / ${layout.pages}${older ? '+' : ''}` : '页 0 / 0';
+        pageNumber.title = older ? '已加载页数。向前翻可继续加载更早的聊天。' : '阅读页码';
+        const loading = Boolean(historyLoad);
+        const atLatest = first >= lastSpread();
+        previous.disabled = loading || (first <= 0 && !older);
+        next.disabled = loading || atLatest;
+        latest.disabled = loading;
+        latest.hidden = atLatest;
+    }
+
+    async function revealOlderFloors(through, requestEpoch) {
+        while (historyLoad) await historyLoad;
+        if (!active || requestEpoch !== epoch) return false;
+        const count = firstRenderedFloor() - through;
+        if (count <= 0) return false;
+        const request = loadHistory(count);
+        historyLoad = request;
+        updatePageControls();
+        try {
+            await request;
+            return true;
+        } finally {
+            historyLoad = null;
+            queueLayout();
+        }
+    }
+
+    function primeHistory() {
+        const older = remainingHistory();
+        if (historyPrimed || historyLoad || !layout.pages || layout.pages > layout.visibleLeaves || !older) return;
+        historyPrimed = true;
+        void revealOlderFloors(Math.max(0, older - historyBatchSize), epoch).catch(error => {
+            console.warn('[Night Signal] Could not load earlier chat pages', error);
+        });
     }
 
     function showPage(page, { updateFollowing = false } = {}) {
@@ -205,6 +248,7 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
         const page = following ? lastSpread() : anchor ? resolveReaderAnchor(chat, layout, anchor) : priorPage;
         showPage(page);
         refreshFloorOptions();
+        primeHistory();
     }
 
     function queueLayout() {
@@ -224,7 +268,7 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
     }
 
     async function navigate(page, { animate = true } = {}) {
-        if (!active || turning || page < 0 || page >= layout.pages) return;
+        if (!active || turning || historyLoad || page < 0 || page >= layout.pages) return;
         const current = spreadStart(currentPage);
         const target = spreadStart(page);
         const noMotion = reducedMotion.matches || context.powerUserSettings?.reduced_motion;
@@ -277,9 +321,8 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
         cancelTurn();
         const id = Number(value);
         const request = ++epoch;
-        const first = Number(chat.querySelector(':scope > .mes[mesid]')?.getAttribute('mesid'));
         try {
-            if (Number.isFinite(first) && id < first) await loadHistory(first - id);
+            await revealOlderFloors(id, request);
             if (!active || request !== epoch) return;
             refreshLayout();
             const target = findReaderFloorPage(chat, layout, value);
@@ -289,6 +332,29 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
             }
         } catch (error) {
             console.warn('[Night Signal] Could not open chat floor', error);
+        }
+    }
+
+    async function previousPage() {
+        if (!active || turning || historyLoad) return;
+        const start = spreadStart(currentPage);
+        if (start > 0) {
+            await navigate(start - layout.visibleLeaves);
+            return;
+        }
+        const older = remainingHistory();
+        if (!older) return;
+        const request = epoch;
+        following = false;
+        anchor = captureReaderAnchor(chat, layout, currentPage);
+        historyPrimed = true;
+        try {
+            if (!await revealOlderFloors(Math.max(0, older - historyBatchSize), request) || request !== epoch) return;
+            refreshLayout();
+            const target = Math.max(0, spreadStart(currentPage) - layout.visibleLeaves);
+            showPage(target);
+        } catch (error) {
+            console.warn('[Night Signal] Could not load earlier chat pages', error);
         }
     }
 
@@ -329,6 +395,7 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
         epoch++;
         cancelTurn();
         floorCount = -1;
+        historyPrimed = false;
         anchor = null;
         currentPage = 0;
         following = true;
@@ -392,15 +459,15 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
     }, { passive: true, signal });
     document.fonts?.addEventListener('loadingdone', queueLayout, { signal });
 
-    previous.addEventListener('click', () => void navigate(spreadStart(currentPage) - layout.visibleLeaves), { signal });
+    previous.addEventListener('click', () => void previousPage(), { signal });
     next.addEventListener('click', () => void navigate(spreadStart(currentPage) + layout.visibleLeaves), { signal });
     latest.addEventListener('click', () => void navigate(lastSpread(), { animate: false }), { signal });
     pages.addEventListener('keydown', event => {
         if (event.altKey || event.ctrlKey || event.metaKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
         event.preventDefault();
         event.stopPropagation();
-        const direction = event.key === 'ArrowLeft' ? -1 : 1;
-        void navigate(spreadStart(currentPage) + direction * layout.visibleLeaves);
+        if (event.key === 'ArrowLeft') void previousPage();
+        else void navigate(spreadStart(currentPage) + layout.visibleLeaves);
     }, { signal });
     floor.addEventListener('change', () => {
         const value = floor.value;

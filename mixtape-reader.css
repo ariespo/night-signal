@@ -13,6 +13,13 @@ body.night-signal-reader #sheld {
   --ns-reader-edge: rgb(224 196 162 / 42%);
   --ns-reader-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", Georgia, SimSun, serif;
   --ns-reader-grain: url("./assets/mixtape/reader-paper.webp") center / 620px 620px repeat;
+  display: flex !important;
+  flex-direction: column !important;
+  /* Keep the reader within the viewport even if Movable UI saved a different top. */
+  top: var(--topBarBlockSize, 0px) !important;
+  height: calc(100vh - var(--topBarBlockSize, 0px) - 1px) !important;
+  height: calc(100dvh - var(--topBarBlockSize, 0px) - 1px) !important;
+  max-height: none !important;
   width: min(1520px, calc(100% - 34px));
   box-sizing: border-box;
   padding: 0 clamp(9px, 1.35vw, 20px) max(8px, env(safe-area-inset-bottom));
@@ -45,18 +52,19 @@ body.night-signal-reader #sheld > #chat {
   --SmartThemeQuoteColor: var(--ns-reader-quote);
   --SmartThemeUnderlineColor: var(--ns-reader-underline);
   --SmartThemeShadowColor: transparent;
-  display: block;
-  flex: 1 1 0;
-  min-block-size: 0;
-  max-block-size: none;
-  column-count: var(--ns-reader-leaves);
-  column-fill: auto;
-  column-gap: var(--ns-reader-gap);
+  /* Native and theme chat styles are vertical. Reader mode owns the page geometry. */
+  display: block !important;
+  flex: 1 1 0 !important;
+  height: auto !important;
+  min-block-size: 0 !important;
+  max-block-size: none !important;
+  columns: auto var(--ns-reader-leaves) !important;
+  column-fill: auto !important;
+  column-gap: var(--ns-reader-gap) !important;
   padding: clamp(12px, 2vh, 24px) 0;
   border: 1px solid var(--ns-reader-edge);
   border-radius: 6px 6px 7px 7px;
-  overflow-x: hidden;
-  overflow-y: hidden;
+  overflow: hidden !important;
   overflow-anchor: none;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
@@ -113,7 +121,7 @@ body.night-signal-reader #sheld > #chat > .mes {
   padding: 7px var(--ns-reader-inset) 16px;
   border: 0;
   background: transparent;
-  break-inside: auto;
+  break-inside: auto !important;
   font-size: calc(clamp(15px, 1.28vw, 20px) * var(--ns-reader-scale));
 }
 
@@ -126,8 +134,8 @@ body.night-signal-reader #sheld > #chat > .mes > .mes_block {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
-  overflow: visible;
-  break-inside: auto;
+  overflow: visible !important;
+  break-inside: auto !important;
 }
 
 body.night-signal-reader #sheld > #chat .mes_text {
@@ -246,7 +254,7 @@ body.night-signal-reader #sheld > #chat > .mes[is_user="true"] .mes_text > :wher
 }
 
 body.night-signal-reader #sheld > #chat > #show_more_messages {
-  break-inside: avoid;
+  display: none;
 }
 
 .ns-reader-header,
