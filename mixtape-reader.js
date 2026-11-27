@@ -171,6 +171,7 @@ export function mountMixtapeReader(document, {
     let pageWidth = 0;
     let historyLoad = null;
     let historyPrefillStart = null;
+    let restoreEmptyOnLayout = false;
 
     const spreadStart = page => Math.floor(page / layout.visibleLeaves) * layout.visibleLeaves;
     const lastSpread = () => spreadStart(Math.max(0, layout.pages - 1));
@@ -256,7 +257,7 @@ export function mountMixtapeReader(document, {
 
     function firstRenderedFloor() {
         const id = Number(chat.querySelector(':scope > .mes[mesid]')?.getAttribute('mesid'));
-        return Number.isInteger(id) && id > 0 ? id : 0;
+        return Number.isInteger(id) && id >= 0 ? id : null;
     }
 
     function markFloor(floorId = null) {
@@ -270,7 +271,7 @@ export function mountMixtapeReader(document, {
         const first = spreadStart(currentPage);
         const last = Math.min(layout.pages, first + layout.visibleLeaves);
         const range = first + 1 === last ? last : `${first + 1}–${last}`;
-        const older = firstRenderedFloor() > 0;
+        const older = (firstRenderedFloor() ?? 0) > 0;
         pageNumber.value = layout.pages ? `页 ${range} / ${layout.pages}${older ? '+' : ''}` : '页 0 / 0';
         pageNumber.title = older ? '已加载页数。向前翻可继续加载更早的聊天。' : '阅读页码';
         const loading = Boolean(historyLoad);
@@ -288,7 +289,7 @@ export function mountMixtapeReader(document, {
     async function revealOlderFloors(through, requestEpoch) {
         while (historyLoad) await historyLoad;
         if (!active || requestEpoch !== epoch) return false;
-        const count = firstRenderedFloor() - through;
+        const count = (firstRenderedFloor() ?? context.chat.length) - through;
         if (count <= 0) return false;
         const first = chat.querySelector(':scope > .mes[mesid]');
         const marker = chat.querySelector(':scope > #show_more_messages');
@@ -308,11 +309,11 @@ export function mountMixtapeReader(document, {
         }
     }
 
-    function primeHistory() {
-        const older = firstRenderedFloor();
+    function primeHistory(restoreEmpty) {
+        const older = firstRenderedFloor() ?? (restoreEmpty ? context.chat.length : 0);
         // The Helper can prune the DOM again after a new reply and remove the native load-more marker.
         // Refill one batch per newly observed starting floor, even when that marker is missing.
-        if (!older || older === historyPrefillStart || historyLoad || !layout.pages || layout.pages > layout.visibleLeaves) return;
+        if (!older || older === historyPrefillStart || layout.pages > layout.visibleLeaves) return;
         historyPrefillStart = older;
         void revealOlderFloors(Math.max(0, older - historyBatchSize), epoch).catch(error => {
             console.warn('[Night Signal] Could not load earlier chat pages', error);
@@ -347,7 +348,11 @@ export function mountMixtapeReader(document, {
         const page = following ? lastSpread() : anchor ? resolveReaderAnchor(chat, layout, anchor) : priorPage;
         showPage(page);
         refreshFloorOptions();
-        if (prefill) primeHistory();
+        if (prefill && layout.stride && !historyLoad) {
+            const restoreEmpty = restoreEmptyOnLayout;
+            restoreEmptyOnLayout = false;
+            primeHistory(restoreEmpty);
+        }
     }
 
     function queueLayout() {
@@ -440,7 +445,7 @@ export function mountMixtapeReader(document, {
     async function stepBack(distance, { bySpread = false } = {}) {
         if (!active || turning || historyLoad || !layout.pages) return;
         const position = () => bySpread ? spreadStart(currentPage) : currentPage;
-        let older = firstRenderedFloor();
+        let older = firstRenderedFloor() ?? 0;
         if (!position() && !older) return;
         if (position() >= distance || !older) {
             await navigate(Math.max(0, position() - distance), { animate: bySpread });
@@ -457,7 +462,7 @@ export function mountMixtapeReader(document, {
                 anchor = startingAnchor;
                 refreshLayout({ prefill: false });
                 const first = firstRenderedFloor();
-                if (first >= older) break;
+                if (first === null || first >= older) break;
                 older = first;
             }
             await navigate(Math.max(0, position() - distance), { animate: false });
@@ -501,6 +506,13 @@ export function mountMixtapeReader(document, {
         }
     }
 
+    function syncOpenedChat() {
+        // Native chat switches clear the rows before replacing the data. Wait for a host chat event
+        // before automatically filling an empty list so that we do not reinsert the outgoing chat.
+        restoreEmptyOnLayout = context.chat.length > 0;
+        syncActive();
+    }
+
     function changeChat() {
         epoch++;
         cancelTurn();
@@ -510,11 +522,12 @@ export function mountMixtapeReader(document, {
         anchor = null;
         currentPage = 0;
         following = true;
-        syncActive();
+        syncOpenedChat();
     }
 
     const listeners = [
         ['CHAT_CHANGED', changeChat],
+        ['CHAT_LOADED', syncOpenedChat],
         ['APP_READY', syncActive],
         ['SETTINGS_UPDATED', queueLayout],
     ];
