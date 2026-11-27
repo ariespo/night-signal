@@ -27,7 +27,7 @@ const cues = {
 const titleFocus = { samples: menuFocusClicks, channel: 'ui', rate: [0.85, 1.1], interval: 0.065 };
 const cueSamples = [...new Set([...Object.values(cues).flatMap(cue => cue.samples), ...titleFocus.samples])];
 const busHeadroom = { music: 0.56, effects: 0.82, ambience: 0.66, ui: 0.78 };
-const titleFadeSeconds = 0.2;
+const musicFadeSeconds = 0.2;
 const clampVolume = value => Math.max(0, Math.min(1, value));
 const variation = ([min, max] = [1, 1]) => min + (max - min) * Math.random();
 
@@ -43,7 +43,7 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
     const lastCueAt = new Map();
     const musicListeners = new Set();
     const musicLibrary = createMusicLibrary(window, () => {
-        syncTitleMusic();
+        syncMusic();
         notifyMusic();
     });
     let context;
@@ -59,7 +59,7 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
     let ambienceRequest;
     let enabled = false;
     let ambient = false;
-    let readerMusic = false;
+    let musicRequested = true;
     let settingsActive = false;
     let disposed = false;
     let volume = 0.65;
@@ -78,8 +78,8 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
         return enabled && !disposed && volume > 0 && !document.hidden && context?.state === 'running';
     }
 
-    function wantsTitleMusic() {
-        return (ambient || readerMusic) && !settingsActive && channelVolumes.music > 0 && canPlay();
+    function wantsMusic() {
+        return enabled && !disposed && musicRequested;
     }
 
     function loadSample(name) {
@@ -157,7 +157,7 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
     }
 
     function musicState() {
-        return { ...musicLibrary.getState(), playing: Boolean(music && !music.paused && !music.ended) };
+        return { ...musicLibrary.getState(), playing: Boolean(context?.state === 'running' && music && !music.paused && !music.ended) };
     }
 
     function notifyMusic() {
@@ -180,11 +180,11 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
         musicEnvelope.gain.value = 0;
     }
 
-    function syncTitleMusic() {
+    function syncMusic(gesture = false) {
         const selectedTrack = musicLibrary.getSelected();
         if (musicTrackId && musicTrackId !== selectedTrack?.id) releaseMusicTrack();
-        if (wantsTitleMusic()) {
-            if (!selectedTrack) return;
+        if (wantsMusic()) {
+            if (!selectedTrack || !context || (context.state !== 'running' && !gesture)) return;
             if (musicPausing !== undefined) {
                 window.clearTimeout(musicPausing);
                 musicPausing = undefined;
@@ -195,7 +195,7 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
                 music.addEventListener('play', notifyMusic);
                 music.addEventListener('pause', notifyMusic);
                 music.addEventListener('ended', () => {
-                    if (wantsTitleMusic() && !music.loop) musicLibrary.step(1);
+                    if (wantsMusic() && !music.loop) musicLibrary.step(1);
                     notifyMusic();
                 });
                 musicSource = context.createMediaElementSource(music);
@@ -209,12 +209,12 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
                 musicTrackId = selectedTrack.id;
                 music.src = String(url);
             }
-            setGain(musicEnvelope, 1, titleFadeSeconds);
-            if (music.paused && !musicStarting) {
+            setGain(musicEnvelope, 1, musicFadeSeconds);
+            if (music.paused && (!musicStarting || gesture)) {
                 const request = music.play();
                 musicStarting = request;
                 void request.then(() => {
-                    if (musicStarting === request && !wantsTitleMusic() && musicPausing === undefined) music.pause();
+                    if (musicStarting === request && !wantsMusic() && musicPausing === undefined) music.pause();
                 }).catch(() => {
                     // Browser media policy can require the next user gesture.
                 }).finally(() => {
@@ -224,28 +224,33 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
             return;
         }
         if (!music || music.paused) return;
-        if (!canPlay()) {
+        if (!enabled || context?.state !== 'running') {
             window.clearTimeout(musicPausing);
             musicPausing = undefined;
             musicEnvelope.gain.cancelScheduledValues(context.currentTime);
             musicEnvelope.gain.value = 0;
             music.pause();
         } else if (musicPausing === undefined) {
-            setGain(musicEnvelope, 0, titleFadeSeconds);
+            setGain(musicEnvelope, 0, musicFadeSeconds);
             musicPausing = window.setTimeout(() => {
                 musicPausing = undefined;
-                if (!wantsTitleMusic()) music.pause();
-            }, titleFadeSeconds * 1000);
+                if (!wantsMusic()) music.pause();
+            }, musicFadeSeconds * 1000);
         }
     }
 
     function syncPlayback() {
         syncAmbience();
-        syncTitleMusic();
+        syncMusic();
         if (!canPlay()) {
             playbackReset++;
             for (const voice of activeCues) voice.stop();
         }
+    }
+
+    function audioStateChanged() {
+        syncPlayback();
+        notifyMusic();
     }
 
     function playCue(name) {
@@ -267,11 +272,15 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
         else void loadSample(sample).then(play);
     }
 
-    async function setEnabled(next) {
+    async function setEnabled(next, { gesture = false } = {}) {
         if (disposed) return false;
+        if (next && enabled && context?.state === 'running') {
+            if (!music || music.paused) syncMusic(gesture);
+            return true;
+        }
         const request = ++activation;
+        enabled = Boolean(next);
         if (!next) {
-            enabled = false;
             syncPlayback();
             return false;
         }
@@ -291,24 +300,26 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
                 musicEnvelope = context.createGain();
                 musicEnvelope.gain.value = 0;
                 musicEnvelope.connect(channelBuses.music);
-                context.addEventListener('statechange', syncPlayback);
+                context.addEventListener('statechange', audioStateChanged);
             }
+            // Start media on the same trusted event that resumes the audio context.
+            // Waiting for resume() can lose the user activation on mobile browsers.
+            if (gesture) syncMusic(true);
             if (context.state !== 'running') await context.resume();
         } catch {
             if (request === activation) {
                 enabled = false;
                 syncPlayback();
             }
-            return enabled;
+            return enabled && context?.state === 'running' && !disposed;
         }
         if (request === activation && !disposed) {
-            enabled = context.state === 'running';
             syncPlayback();
-            if (enabled) {
+            if (context.state === 'running') {
                 for (const name of cueSamples) void loadSample(name);
             }
         }
-        return enabled;
+        return enabled && context.state === 'running' && !disposed;
     }
 
     document.addEventListener('visibilitychange', syncPlayback);
@@ -335,17 +346,16 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
         setAmbient(value) {
             if (disposed) return;
             ambient = Boolean(value);
-            syncPlayback();
+            syncAmbience();
         },
-        setReaderMusic(value) {
+        setMusicPlaying(value) {
             if (disposed) return;
-            readerMusic = Boolean(value);
-            syncTitleMusic();
+            musicRequested = Boolean(value);
+            syncMusic();
         },
         setSettingsActive(value) {
             if (disposed) return;
             settingsActive = Boolean(value);
-            syncTitleMusic();
         },
         setChannelVolume(channel, value) {
             if (!Object.hasOwn(channelVolumes, channel) || !Number.isFinite(value) || disposed) return;
@@ -380,7 +390,7 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
                 musicSource.disconnect();
             }
             if (context) {
-                context.removeEventListener('statechange', syncPlayback);
+                context.removeEventListener('statechange', audioStateChanged);
                 void context.close().catch(() => {});
             }
         },

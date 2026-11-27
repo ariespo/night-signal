@@ -652,6 +652,16 @@ body.night-signal-reader #sheld #send_but::before {
   .ns-reader-header .ns-reader-tools {
     flex-basis: 100%;
     justify-content: flex-start;
+    gap: 3px;
+  }
+
+  .ns-reader-header .ns-reader-tools > [data-ns-floor] {
+    flex-basis: 4.5em;
+  }
+
+  .ns-reader-tools :is(button, select, summary) {
+    padding-inline: 4px;
+    white-space: nowrap;
   }
 
   .ns-reader-header select {

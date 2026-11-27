@@ -65,6 +65,7 @@ function createControls(document) {
         </div>
         <div class="ns-reader-tools">
             <button type="button" data-ns-world>世界书</button>
+            <button type="button" data-ns-characters>角色管理</button>
             <select data-ns-floor aria-label="跳到楼层"><option value="">跳到楼层</option></select>
             <button type="button" data-ns-extensions>扩展程序</button>
             <details class="ns-reader-options">
@@ -118,7 +119,8 @@ function createArtwork(document) {
 }
 
 export function mountMixtapeReader(document, {
-    context, stored, save, loadHistory, openWorld, openExtensions, playTrack, subscribeMusic, changeTrack, setMusicMode,
+    context, stored, save, loadHistory, openWorld, openCharacters, openExtensions, playTrack,
+    subscribeMusic, changeTrack, setMusicMode,
 }) {
     const window = document.defaultView;
     const chat = document.querySelector('#sheld > #chat');
@@ -208,13 +210,13 @@ export function mountMixtapeReader(document, {
         trackIcon.textContent = playing ? 'Ⅱ' : '▶';
     }
 
-    const unsubscribeMusic = subscribeMusic(({ tracks, selectedId, mode }) => {
+    const unsubscribeMusic = subscribeMusic(({ tracks, selectedId, mode, playing }) => {
         const title = tracks.find(item => item.id === selectedId)?.title ?? '';
         if (trackTitle.textContent !== title) {
             trackTitle.textContent = title;
             track.title = title;
-            showTrackState(track.getAttribute('aria-pressed') === 'true');
         }
+        showTrackState(playing);
         for (const button of skipTracks) button.hidden = tracks.length < 2;
         if (modeButton.dataset.nsPlaybackMode !== mode) {
             const label = musicModes[mode];
@@ -479,8 +481,6 @@ export function mountMixtapeReader(document, {
                 window.cancelAnimationFrame(frame);
                 frame = 0;
                 chat.scrollLeft = 0;
-                void playTrack(false);
-                showTrackState(false);
             }
         }
         document.body.classList.toggle('night-signal-reader', active);
@@ -598,6 +598,7 @@ export function mountMixtapeReader(document, {
         void jumpToFloor(value);
     }, { signal });
     header.querySelector('[data-ns-world]').addEventListener('click', openWorld, { signal });
+    header.querySelector('[data-ns-characters]').addEventListener('click', openCharacters, { signal });
     header.querySelector('[data-ns-extensions]').addEventListener('click', openExtensions, { signal });
     for (const button of skipTracks) {
         button.addEventListener('click', () => changeTrack(Number(button.dataset.nsTrackStep)), { signal });
@@ -606,15 +607,8 @@ export function mountMixtapeReader(document, {
         const current = playbackModes.indexOf(modeButton.dataset.nsPlaybackMode);
         setMusicMode(playbackModes[(current + 1) % playbackModes.length]);
     }, { signal });
-    track.addEventListener('click', async () => {
-        track.disabled = true;
-        try {
-            const playing = await playTrack(track.getAttribute('aria-pressed') !== 'true');
-            if (active && !signal.aborted) showTrackState(playing);
-            else if (playing) void playTrack(false);
-        } finally {
-            track.disabled = false;
-        }
+    track.addEventListener('click', () => {
+        playTrack(track.getAttribute('aria-pressed') !== 'true');
     }, { signal });
     header.querySelector('.ns-reader-exit').addEventListener('click', () => setEnabled(false), { signal });
     header.querySelector('[data-ns-reset]').addEventListener('click', () => {
@@ -641,10 +635,6 @@ export function mountMixtapeReader(document, {
     return {
         setEnabled,
         refresh: queueLayout,
-        stopTrack() {
-            void playTrack(false);
-            showTrackState(false);
-        },
         get enabled() { return preferences.enabled; },
         dispose() {
             unsubscribeMusic();

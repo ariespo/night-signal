@@ -1,12 +1,9 @@
 import { mountDiscPage } from './mixtape-disc-page.js';
 
 const nativePanels = [
-    ['ai-config-button', 'AI 响应配置', 'left-nav-panel'],
+    ['ai-config-button', '预设设置', 'left-nav-panel'],
     ['sys-settings-button', 'API 连接', 'rm_api_block'],
-    ['advanced-formatting-button', '高级格式化', 'AdvancedFormatting'],
     ['WI-SP-button', '世界书', 'WorldInfo'],
-    ['user-settings-button', '用户设置', 'user-settings-block'],
-    ['backgrounds-button', '背景', 'Backgrounds'],
     ['extensions-settings-button', '扩展程序', 'rm_extensions_block'],
     ['persona-management-button', '用户设定', 'PersonaManagement'],
     ['rightNavHolder', '角色管理', 'right-nav-panel'],

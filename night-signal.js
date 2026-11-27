@@ -171,7 +171,7 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
         ctx.saveSettingsDebounced();
     };
     let theme;
-    let ready = !deferStartup;
+    let ready = false;
     const options = mountThemeOptions(document, preferences, key => {
         savePreferences();
         if (key === 'enabled') {
@@ -188,6 +188,7 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
         if (theme) return;
         theme = mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, resolveSceneAsset });
         options?.setAudio(theme.audio);
+        if (ready) theme.startAudio(Boolean(window.navigator.userActivation?.isActive));
     }
 
     function disableTheme() {
@@ -199,6 +200,7 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
 
     function openOnStartup() {
         ready = true;
+        theme?.startAudio();
         theme?.openOnStartup();
     }
 
@@ -243,7 +245,6 @@ function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, 
     let previousFocus;
     let currentEntry;
     let titleVisited = false;
-    let soundActive = false;
     let unlocking;
 
     const domEvents = new AbortController();
@@ -259,7 +260,7 @@ function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, 
         audio: routedAudio,
         preferences,
         resolveAsset: resolveSceneAsset,
-        isSoundOn: () => soundActive,
+        isSoundOn: () => preferences.soundEnabled,
         toggleSound: () => toggleSound({ restoreFocus: false }),
         onTitle: showTitle,
     });
@@ -287,19 +288,19 @@ function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, 
         },
         loadHistory: showMoreMessages,
         openWorld: () => stage.open('WI-SP-button'),
+        openCharacters: () => stage.open('rightNavHolder'),
         openExtensions: () => stage.open('extensions-settings-button'),
         subscribeMusic: audio.subscribeMusic,
         changeTrack: audio.stepTrack,
         setMusicMode: audio.setMusicMode,
-        async playTrack(playing) {
-            if (playing && !soundActive) {
-                const enabled = await audio.setEnabled(true);
-                if (signal.aborted || !refreshSoundState(enabled)) return false;
+        playTrack(playing) {
+            if (playing && !preferences.soundEnabled) {
                 preferences.soundEnabled = true;
                 savePreferences();
+                refreshSoundState();
             }
-            audio.setReaderMusic(playing);
-            return playing;
+            audio.setMusicPlaying(playing);
+            if (playing) unlockSound(true);
         },
     });
     if (reader) {
@@ -430,43 +431,38 @@ function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, 
         }
     }
 
-    function refreshSoundState(enabled) {
-        if (signal.aborted) return false;
-        soundActive = enabled;
-        sound.setAttribute('aria-pressed', String(enabled));
-        sound.textContent = enabled ? '声音开' : '声音关';
+    function refreshSoundState() {
+        sound.setAttribute('aria-pressed', String(preferences.soundEnabled));
+        sound.textContent = preferences.soundEnabled ? '声音开' : '声音关';
         stage.refreshSound();
-        if (!enabled) reader?.stopTrack();
-        return enabled;
     }
 
-    function unlockSound() {
-        if (!soundActive && preferences.soundEnabled && !unlocking) {
-            unlocking = audio.setEnabled(true).then(refreshSoundState).finally(() => { unlocking = undefined; });
-        }
+    function unlockSound(gesture = false) {
+        if (!preferences.soundEnabled) return;
+        const attempt = audio.setEnabled(true, { gesture });
+        // The initial resume() can remain pending while autoplay is blocked.
+        // Let a trusted gesture make its own attempt without waiting for it.
+        if (!gesture) return;
+        unlocking = attempt;
+        void attempt.finally(() => {
+            if (unlocking === attempt) unlocking = undefined;
+        });
     }
 
     function primeAudio(event) {
         if (!event.isTrusted || event.isComposing) return;
-        const target = event.target;
-        if (!target?.closest) return;
-        if (target.closest('.ns-sound, .mt-stage-sound')) return;
-        if (target.closest('#night-signal-menu, .night-signal-launcher, .ns-theme-toolbar, #top-settings-holder .drawer-toggle, .mt-stage-controls, body.mt-stage-open #top-settings-holder .openDrawer')) {
-            unlockSound();
-        }
+        if (event.type === 'pointerdown' && event.pointerType !== 'mouse') return;
+        if (event.type === 'pointerup' && event.pointerType === 'mouse') return;
+        if (event.target?.closest?.('.ns-sound, .mt-stage-sound, .ns-reader-track')) return;
+        unlockSound(true);
     }
 
     async function toggleSound({ restoreFocus = true } = {}) {
-        sound.disabled = true;
-        try {
-            preferences.soundEnabled = !soundActive;
-            savePreferences();
-            const enabled = refreshSoundState(await audio.setEnabled(preferences.soundEnabled));
-            if (enabled) routedAudio.cue('toggle');
-        } finally {
-            sound.disabled = false;
-            if (dialog.open && restoreFocus) sound.focus({ preventScroll: true });
-        }
+        const enabled = preferences.soundEnabled = !preferences.soundEnabled;
+        savePreferences();
+        refreshSoundState();
+        if (dialog.open && restoreFocus) sound.focus({ preventScroll: true });
+        if (await audio.setEnabled(enabled, { gesture: enabled }) && preferences.soundEnabled) routedAudio.cue('toggle');
     }
 
     function openTitlePanel(id, message, { returnToTitle = false } = {}) {
@@ -486,13 +482,14 @@ function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, 
         sound: () => toggleSound(),
         continue: () => context().getCurrentChatId() ? closeTitle({ focusChat: true }) : showRecent({ resume: true }),
         recent: () => showRecent(),
-        settings: () => openTitlePanel('user-settings-button', '酒馆设置暂时不可用。', { returnToTitle: true }),
+        settings: () => openTitlePanel('ai-config-button', '预设设置暂时不可用。', { returnToTitle: true }),
         characters: () => openTitlePanel('rightNavHolder', '角色管理暂时不可用。'),
         'open-chat': button => resumeChat(recentRows.get(button)),
     };
 
     launcher.addEventListener('click', showTitle);
     document.addEventListener('pointerdown', primeAudio, { capture: true, signal: domEvents.signal });
+    document.addEventListener('pointerup', primeAudio, { capture: true, signal: domEvents.signal });
     document.addEventListener('keydown', primeAudio, { capture: true, signal: domEvents.signal });
     dialog.addEventListener('click', event => {
         const button = event.target.closest('button[data-action]');
@@ -538,8 +535,10 @@ function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, 
     document.body.append(dialog, toolbar);
     document.body.classList.add('night-signal-theme');
     applyAppearance(preferences);
+    refreshSoundState();
     return {
         audio,
+        startAudio: unlockSound,
         openOnStartup() {
             if (preferences.showOnStartup && !titleVisited) showTitle();
         },
