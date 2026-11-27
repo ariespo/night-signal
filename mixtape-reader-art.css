@@ -31,9 +31,22 @@ body.night-signal-reader #sheld:has(> .ns-reader-art) > #chat {
   background:
     var(--ns-reader-page-art) center / 100% 100% no-repeat,
     var(--ns-reader-grain),
-    radial-gradient(ellipse at 27% 0%, rgb(253 223 190 / 6%), transparent 60%),
+    radial-gradient(ellipse 64% 76% at var(--ns-paper-light-x, 29%) var(--ns-paper-light-y, 19%),
+      rgb(238 211 179 / 14%), rgb(236 209 180 / 7%) 51%, transparent 100%),
     var(--ns-reader-bg);
   background-blend-mode: overlay, soft-light, normal;
+}
+
+body.reduced-motion #sheld > #chat {
+  --ns-paper-light-x: 29% !important;
+  --ns-paper-light-y: 19% !important;
+}
+
+@media (prefers-reduced-motion: reduce), print, (forced-colors: active) {
+  body.night-signal-reader #sheld > #chat {
+    --ns-paper-light-x: 29% !important;
+    --ns-paper-light-y: 19% !important;
+  }
 }
 
 .ns-reader-art {
@@ -91,70 +104,6 @@ body:not(.night-signal-reader) .ns-reader-art,
   height: var(--ns-reader-barcode-height);
   background: url("./assets/mixtape/reader-barcode.webp") center / contain no-repeat;
   filter: drop-shadow(1px 2px 1px rgb(0 0 0 / 38%));
-}
-
-.ns-reader-art > .ns-reader-cover {
-  z-index: 31;
-  top: var(--ns-reader-art-top, 0px);
-  left: var(--ns-reader-art-left, 0px);
-  width: var(--ns-reader-art-width, 0px);
-  height: var(--ns-reader-art-height, 0px);
-  border-radius: 6px 6px 7px 7px;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.ns-reader-cover .mt-scene-reflection {
-  opacity: 0.23;
-  pointer-events: none;
-}
-
-.ns-reader-cover::before,
-.ns-reader-cover::after {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: url("./assets/mixtape/reader-cover-wear.webp") center / cover no-repeat;
-}
-
-.ns-reader-cover::before {
-  content: "";
-  opacity: 0.16;
-}
-
-/* Light up the wear map at the centres of the stage's two existing reflections. */
-@supports ((mask-image: linear-gradient(black, transparent)) or (-webkit-mask-image: linear-gradient(black, transparent))) {
-  .ns-reader-cover::after {
-    --ns-reader-key-x: calc(18% + clamp(-4%, var(--mt-reflection-x, 0%), 95%) * 0.32);
-    --ns-reader-key-y: calc(15.5% + clamp(-13%, var(--mt-reflection-y, 0%), 75%) * 0.23);
-    --ns-reader-fill-x: calc(88% + clamp(-90%, var(--mt-reflection-x, 0%), 8%) * 0.20);
-    --ns-reader-fill-y: calc(78% + clamp(-60%, var(--mt-reflection-y, 0%), 14%) * 0.34);
-    --ns-reader-wear-mask:
-      radial-gradient(ellipse 23% 18% at var(--ns-reader-key-x) var(--ns-reader-key-y), black, transparent 75%),
-      radial-gradient(ellipse 15% 24% at var(--ns-reader-fill-x) var(--ns-reader-fill-y), rgb(0 0 0 / 75%), transparent 75%);
-    content: "";
-    opacity: 0.43;
-    -webkit-mask-image: var(--ns-reader-wear-mask);
-    mask-image: var(--ns-reader-wear-mask);
-  }
-}
-
-body.reduced-motion .ns-reader-cover {
-  --mt-reflection-x: 0% !important;
-  --mt-reflection-y: 0% !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ns-reader-cover {
-    --mt-reflection-x: 0% !important;
-    --mt-reflection-y: 0% !important;
-  }
-}
-
-@media print, (forced-colors: active) {
-  .ns-reader-art > .ns-reader-cover {
-    display: none;
-  }
 }
 
 #sheld[data-ns-reader-leaves="1"] .ns-reader-art > :is(.ns-reader-art-disc, .ns-reader-art-barcode) {

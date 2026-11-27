@@ -3,12 +3,21 @@ import { openGroupById } from '/scripts/group-chats.js';
 import { createAudio } from './audio.js';
 import { mountMixtapeStage } from './mixtape-stage.js';
 import { mountMixtapeReader } from './mixtape-reader.js';
+import { appearanceFields, mountThemeOptions } from './mixtape-options.js';
 
 const settingsKey = 'nightSignal';
 const context = () => SillyTavern.getContext();
 let shutdown;
 
 const defaultPreferences = {
+    enabled: true,
+    hideTopNav: true,
+    hideReasoning: false,
+    hideActions: false,
+    hideNames: false,
+    hideAvatars: false,
+    hideTimestamps: false,
+    hideComposerTools: false,
     volume: 45,
     musicVolume: 100,
     ambienceVolume: 100,
@@ -39,41 +48,10 @@ function mixAudio(audio, preferences) {
     audio.setChannelVolume('ui', preferences.cueVolume / 100);
 }
 
-function addThemeOptions(doc, preferences, change) {
-    const outlet = doc.querySelector('#extensions_settings2, #extensions_settings');
-    if (!outlet) return null;
-    const item = doc.createElement('details');
-    item.className = 'mt-theme-options';
-    const heading = doc.createElement('summary');
-    heading.textContent = '夜间电台 · 主题选项';
-    item.append(heading);
-    const controls = [
-        ['volume', '主题总音量'], ['musicVolume', '音乐'], ['ambienceVolume', '环境声'],
-        ['effectsVolume', '过场音效'], ['cueVolume', '操作音效'],
-        ['showOnStartup', '启动时打开标题菜单'], ['gamepad', '手柄切换设置板块'],
-    ];
-    for (const [key, label] of controls) {
-        const row = doc.createElement('label');
-        row.textContent = label;
-        const input = doc.createElement('input');
-        if (typeof preferences[key] === 'boolean') {
-            input.type = 'checkbox';
-            input.checked = preferences[key];
-        } else {
-            input.type = 'range';
-            input.min = '0';
-            input.max = '100';
-            input.value = String(preferences[key]);
-        }
-        input.addEventListener('input', () => {
-            preferences[key] = input.type === 'checkbox' ? input.checked : input.valueAsNumber;
-            change();
-        });
-        row.append(input);
-        item.append(row);
+function applyAppearance(preferences) {
+    for (const [key, , attribute] of appearanceFields) {
+        document.body.toggleAttribute(`data-ns-ui-hide-${attribute}`, Boolean(preferences?.[key]));
     }
-    outlet.append(item);
-    return item;
 }
 
 function menuEntry(action, label, detail = '') {
@@ -103,29 +81,20 @@ function createMenu() {
     dialog.setAttribute('aria-labelledby', 'ns-title');
     dialog.innerHTML = `
         <div class="ns-shell">
-            <header class="ns-header">
-                <span class="ns-brand">SILLYTAVERN</span>
-                <button class="ns-close" type="button" data-action="close">关闭 <span aria-hidden="true">×</span></button>
-            </header>
-            <main class="ns-main">
-                <div class="ns-copy">
-                    <section class="ns-page" data-page="home">
-                        <h1 class="ns-title ns-mixtape-logo" id="ns-title"><span>Mixtape · 夜间电台</span></h1>
-                        <nav class="ns-menu" aria-label="标题菜单"></nav>
-                    </section>
-                    <section class="ns-page" data-page="recent" hidden>
-                        <h2 class="ns-title" id="ns-recent-title">最近聊天</h2>
-                        <div class="ns-recent"></div>
-                        <button type="button" class="ns-back" data-action="back">← 返回菜单</button>
-                    </section>
-                    <p class="ns-status" role="status" hidden></p>
-                </div>
-                <div class="ns-art" aria-hidden="true"></div>
-            </main>
-            <footer class="ns-footer">
-                <div class="ns-hints"><span>↑ ↓ 选择</span><span>Enter 确认</span><span>Esc 返回</span></div>
+            <section class="ns-page ns-md-device" data-page="home">
+                <div class="ns-md-face" aria-hidden="true"></div>
+                <h1 class="ns-title" id="ns-title">夜间电台</h1>
+                <nav class="ns-menu" aria-label="标题菜单"></nav>
                 <button class="ns-sound" type="button" data-action="sound" aria-pressed="false">声音关</button>
-            </footer>
+                <button class="ns-close" type="button" data-action="close">退出</button>
+                <span class="ns-author" aria-label="作者 poaries">poaries</span>
+            </section>
+            <section class="ns-page ns-md-history" data-page="recent" hidden>
+                <h2 class="ns-title" id="ns-recent-title">最近聊天</h2>
+                <div class="ns-recent"></div>
+                <button type="button" class="ns-back" data-action="back">← 返回菜单</button>
+            </section>
+            <p class="ns-status" role="status" hidden></p>
         </div>`;
     dialog.querySelector('[data-page="home"] .ns-menu').append(
         menuEntry('continue', '继续聊天'),
@@ -187,17 +156,64 @@ async function openRecentChat(entry) {
 }
 
 export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false } = {}) {
-    if (shutdown || document.getElementById('night-signal-menu')) return null;
+    if (shutdown || document.querySelector('#night-signal-menu, #night-signal-theme-options')) return null;
     const menu = document.querySelector('#extensionsMenu');
     if (!menu) return null;
 
     const ctx = context();
-    const audio = createAudio(window, resolveAudioUrl);
     const preferences = readPreferences(ctx.extensionSettings[settingsKey]);
     const savePreferences = () => {
         ctx.extensionSettings[settingsKey] = { ...ctx.extensionSettings[settingsKey], ...preferences };
         ctx.saveSettingsDebounced();
     };
+    let theme;
+    let ready = !deferStartup;
+    const options = mountThemeOptions(document, preferences, key => {
+        savePreferences();
+        if (key === 'enabled') {
+            if (preferences.enabled) {
+                if (document.querySelector('#rm_extensions_block.openDrawer:not(.pinnedOpen)')) {
+                    document.querySelector('#extensions-settings-button > .drawer-toggle')?.click();
+                }
+                enableTheme();
+            } else disableTheme();
+        } else theme?.updatePreferences(key);
+    });
+
+    function enableTheme() {
+        if (theme) return;
+        theme = mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, resolveSceneAsset });
+        options?.setAudio(theme.audio);
+    }
+
+    function disableTheme() {
+        if (!theme) return;
+        options?.setAudio(null);
+        theme.dispose();
+        theme = undefined;
+    }
+
+    function openOnStartup() {
+        ready = true;
+        theme?.openOnStartup();
+    }
+
+    const dispose = () => {
+        if (shutdown !== dispose) return;
+        if (!ready) ctx.eventSource.removeListener(ctx.eventTypes.APP_READY, openOnStartup);
+        disableTheme();
+        options?.dispose();
+        shutdown = undefined;
+    };
+    shutdown = dispose;
+    if (preferences.enabled) enableTheme();
+    if (deferStartup) ctx.eventSource.once(ctx.eventTypes.APP_READY, openOnStartup);
+    else openOnStartup();
+    return dispose;
+}
+
+function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, resolveSceneAsset }) {
+    const audio = createAudio(window, resolveAudioUrl);
 
     const launcherItem = document.createElement('div');
     launcherItem.className = 'extension_container';
@@ -214,7 +230,6 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
     const status = dialog.querySelector('.ns-status');
     const recentList = dialog.querySelector('.ns-recent');
     const sound = dialog.querySelector('.ns-sound');
-    const titleArt = dialog.querySelector('.ns-art');
     const recentRows = new WeakMap();
 
     let page = 'home';
@@ -227,6 +242,7 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
     let unlocking;
 
     const domEvents = new AbortController();
+    const { signal } = domEvents;
     const routedAudio = {
         ...audio,
         cue(name) {
@@ -234,11 +250,6 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
             else audio.cue(name);
         },
     };
-    const themeOptions = addThemeOptions(document, preferences, () => {
-        mixAudio(audio, preferences);
-        savePreferences();
-    });
-
     const stage = mountMixtapeStage(document, {
         audio: routedAudio,
         preferences,
@@ -271,9 +282,14 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
         },
         loadHistory: showMoreMessages,
         openWorld: () => stage.open('WI-SP-button'),
+        openExtensions: () => stage.open('extensions-settings-button'),
+        subscribeMusic: audio.subscribeMusic,
+        changeTrack: audio.stepTrack,
+        setMusicMode: audio.setMusicMode,
         async playTrack(playing) {
             if (playing && !soundActive) {
-                if (!refreshSoundState(await audio.setEnabled(true))) return false;
+                const enabled = await audio.setEnabled(true);
+                if (signal.aborted || !refreshSoundState(enabled)) return false;
                 preferences.soundEnabled = true;
                 savePreferences();
             }
@@ -285,6 +301,19 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
         refreshReaderToggle(reader.enabled);
         readerToggle.addEventListener('click', () => reader.setEnabled(!reader.enabled), { signal: domEvents.signal });
     }
+
+    const toolbar = document.createElement('nav');
+    toolbar.className = 'ns-theme-toolbar';
+    toolbar.setAttribute('aria-label', '夜间电台');
+    const titleButton = document.createElement('button');
+    titleButton.type = 'button';
+    titleButton.textContent = '夜间电台';
+    titleButton.addEventListener('click', showTitle, { signal });
+    const optionsButton = document.createElement('button');
+    optionsButton.type = 'button';
+    optionsButton.textContent = '扩展程序';
+    optionsButton.addEventListener('click', () => stage.open('extensions-settings-button'), { signal });
+    toolbar.append(titleButton, optionsButton);
 
     const selectable = () => [...dialog.querySelectorAll('.ns-page:not([hidden]) :is(.ns-entry, .ns-back):enabled')];
 
@@ -397,6 +426,7 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
     }
 
     function refreshSoundState(enabled) {
+        if (signal.aborted) return false;
         soundActive = enabled;
         sound.setAttribute('aria-pressed', String(enabled));
         sound.textContent = enabled ? '声音开' : '声音关';
@@ -416,7 +446,7 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
         const target = event.target;
         if (!target?.closest) return;
         if (target.closest('.ns-sound, .mt-stage-sound')) return;
-        if (target.closest('#night-signal-menu, .night-signal-launcher, #top-settings-holder .drawer-toggle, .mt-stage-controls, body.mt-stage-open #top-settings-holder .openDrawer')) {
+        if (target.closest('#night-signal-menu, .night-signal-launcher, .ns-theme-toolbar, #top-settings-holder .drawer-toggle, .mt-stage-controls, body.mt-stage-open #top-settings-holder .openDrawer')) {
             unlockSound();
         }
     }
@@ -452,11 +482,7 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
         continue: () => context().getCurrentChatId() ? closeTitle({ focusChat: true }) : showRecent({ resume: true }),
         recent: () => showRecent(),
         settings: () => openTitlePanel('user-settings-button', '酒馆设置暂时不可用。', { returnToTitle: true }),
-        characters: () => {
-            if (openTitlePanel('rightNavHolder', '角色管理暂时不可用。')) {
-                document.querySelector('#rm_button_characters')?.click();
-            }
-        },
+        characters: () => openTitlePanel('rightNavHolder', '角色管理暂时不可用。'),
         'open-chat': button => resumeChat(recentRows.get(button)),
     };
 
@@ -477,16 +503,6 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
     dialog.addEventListener('pointerover', event => {
         const button = event.target.closest('.ns-entry, .ns-back');
         if (event.pointerType === 'mouse' && button && !button.contains(event.relatedTarget)) setActive(button, true);
-    });
-    titleArt.addEventListener('pointermove', event => {
-        if (event.pointerType !== 'mouse') return;
-        const bounds = titleArt.getBoundingClientRect();
-        titleArt.style.setProperty('--ns-tilt-x', `${(0.5 - (event.clientY - bounds.top) / bounds.height) * 12}deg`);
-        titleArt.style.setProperty('--ns-tilt-y', `${((event.clientX - bounds.left) / bounds.width - 0.5) * 15}deg`);
-    });
-    titleArt.addEventListener('pointerleave', () => {
-        titleArt.style.removeProperty('--ns-tilt-x');
-        titleArt.style.removeProperty('--ns-tilt-y');
     });
     dialog.addEventListener('cancel', event => {
         event.preventDefault();
@@ -514,31 +530,35 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
 
     menu.append(launcherItem);
     if (reader) menu.append(readerItem);
-    document.body.append(dialog);
+    document.body.append(dialog, toolbar);
     document.body.classList.add('night-signal-theme');
-    const openOnStartup = () => {
-        if (preferences.showOnStartup && !titleVisited) showTitle();
+    applyAppearance(preferences);
+    return {
+        audio,
+        openOnStartup() {
+            if (preferences.showOnStartup && !titleVisited) showTitle();
+        },
+        updatePreferences(key) {
+            if (appearanceFields.some(([field]) => key === field)) {
+                applyAppearance(preferences);
+                reader?.refresh();
+            } else mixAudio(audio, preferences);
+        },
+        dispose() {
+            recentRequest?.abort();
+            domEvents.abort();
+            reader?.dispose();
+            stage.dispose();
+            audio.dispose();
+            if (dialog.open) dialog.close();
+            dialog.remove();
+            toolbar.remove();
+            launcherItem.remove();
+            readerItem.remove();
+            applyAppearance(null);
+            document.body.classList.remove('night-signal-theme');
+        },
     };
-    const dispose = () => {
-        if (shutdown !== dispose) return;
-        shutdown = undefined;
-        if (deferStartup) ctx.eventSource.removeListener(ctx.eventTypes.APP_READY, openOnStartup);
-        recentRequest?.abort();
-        domEvents.abort();
-        reader?.dispose();
-        stage.dispose();
-        themeOptions?.remove();
-        audio.dispose();
-        if (dialog.open) dialog.close();
-        dialog.remove();
-        launcherItem.remove();
-        readerItem.remove();
-        document.body.classList.remove('night-signal-theme');
-    };
-    shutdown = dispose;
-    if (deferStartup) ctx.eventSource.once(ctx.eventTypes.APP_READY, openOnStartup);
-    else openOnStartup();
-    return dispose;
 }
 
 export function onDisable() {

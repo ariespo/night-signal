@@ -232,7 +232,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     }
 
     function openNativePanel(id) {
-        if (id === 'rightNavHolder' && panel && panel.id !== id
+        if (id === 'rightNavHolder' && panel?.id !== id
             && doc.getElementById('right-nav-panel')?.dataset.menuType !== 'characters') {
             doc.getElementById('rm_button_characters')?.click();
         }
@@ -353,6 +353,11 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         onPanel: panelChanged,
         onCue: cue => audio.cue(cue),
         onOpenFailed: failTitleOpening,
+        onChatOpened() {
+            if (panel?.id !== 'rightNavHolder') return;
+            fromTitle = false;
+            exit();
+        },
     });
 
     function stepPanel(direction) {

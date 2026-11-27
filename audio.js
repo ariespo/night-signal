@@ -1,5 +1,6 @@
+import { createMusicLibrary } from './mixtape-music.js';
+
 const menuAmbience = 'sfx_SlatersAlbum_ComputerAmbience';
-const titleMusic = 'SLATER_SYNTH_ODYSSEY_wip1';
 const settingsClicks = ['sfx_ui_SettingsClick1', 'sfx_ui_SettingsClick2', 'sfx_ui_SettingsClick3', 'sfx_ui_SettingsClick4'];
 const menuFocusClicks = ['sfx_ui_PauseClick1', 'sfx_ui_PauseClick2', 'sfx_ui_PauseClick3'];
 const tabClicks = ['sfx_ui_SettingsCategory1', 'sfx_ui_SettingsCategory2', 'sfx_ui_SettingsCategory3'];
@@ -40,13 +41,20 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
     const channelVolumes = { music: 1, effects: 1, ambience: 1, ui: 1 };
     const channelBuses = {};
     const lastCueAt = new Map();
+    const musicListeners = new Set();
+    const musicLibrary = createMusicLibrary(window, () => {
+        syncTitleMusic();
+        notifyMusic();
+    });
     let context;
     let master;
     let musicEnvelope;
     let music;
     let musicSource;
+    let musicTrackId;
+    let localMusicUrl;
     let musicPausing;
-    let musicStarting = false;
+    let musicStarting;
     let ambienceVoice;
     let ambienceRequest;
     let enabled = false;
@@ -148,30 +156,70 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
         });
     }
 
+    function musicState() {
+        return { ...musicLibrary.getState(), playing: Boolean(music && !music.paused && !music.ended) };
+    }
+
+    function notifyMusic() {
+        const state = musicState();
+        for (const listener of musicListeners) listener(state);
+    }
+
+    function releaseMusicTrack() {
+        if (!music) return;
+        window.clearTimeout(musicPausing);
+        musicPausing = undefined;
+        musicStarting = undefined;
+        musicTrackId = undefined;
+        music.pause();
+        music.removeAttribute('src');
+        music.load();
+        if (localMusicUrl) window.URL.revokeObjectURL(localMusicUrl);
+        localMusicUrl = undefined;
+        musicEnvelope.gain.cancelScheduledValues(context.currentTime);
+        musicEnvelope.gain.value = 0;
+    }
+
     function syncTitleMusic() {
+        const selectedTrack = musicLibrary.getSelected();
+        if (musicTrackId && musicTrackId !== selectedTrack?.id) releaseMusicTrack();
         if (wantsTitleMusic()) {
+            if (!selectedTrack) return;
             if (musicPausing !== undefined) {
                 window.clearTimeout(musicPausing);
                 musicPausing = undefined;
             }
             if (!music) {
-                const url = resolveSample(titleMusic);
-                if (!url) return;
                 music = document.createElement('audio');
                 music.preload = 'none';
-                music.loop = true;
-                music.src = String(url);
+                music.addEventListener('play', notifyMusic);
+                music.addEventListener('pause', notifyMusic);
+                music.addEventListener('ended', () => {
+                    if (wantsTitleMusic() && !music.loop) musicLibrary.step(1);
+                    notifyMusic();
+                });
                 musicSource = context.createMediaElementSource(music);
                 musicSource.connect(musicEnvelope);
             }
+            music.loop = musicLibrary.shouldLoop();
+            if (!musicTrackId) {
+                const url = selectedTrack.builtin ? resolveSample(selectedTrack.sample) : window.URL.createObjectURL(selectedTrack.file);
+                if (!url) return;
+                if (!selectedTrack.builtin) localMusicUrl = url;
+                musicTrackId = selectedTrack.id;
+                music.src = String(url);
+            }
             setGain(musicEnvelope, 1, titleFadeSeconds);
             if (music.paused && !musicStarting) {
-                musicStarting = true;
-                void music.play().then(() => {
-                    if (!wantsTitleMusic() && musicPausing === undefined) music.pause();
+                const request = music.play();
+                musicStarting = request;
+                void request.then(() => {
+                    if (musicStarting === request && !wantsTitleMusic() && musicPausing === undefined) music.pause();
                 }).catch(() => {
                     // Browser media policy can require the next user gesture.
-                }).finally(() => { musicStarting = false; });
+                }).finally(() => {
+                    if (musicStarting === request) musicStarting = undefined;
+                });
             }
             return;
         }
@@ -266,6 +314,18 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
     document.addEventListener('visibilitychange', syncPlayback);
     return {
         setEnabled,
+        getMusicLibrary: musicState,
+        subscribeMusic(listener) {
+            if (disposed) return () => {};
+            musicListeners.add(listener);
+            listener(musicState());
+            return () => musicListeners.delete(listener);
+        },
+        selectTrack: musicLibrary.select,
+        setMusicMode: musicLibrary.setMode,
+        stepTrack: musicLibrary.step,
+        addTracks: musicLibrary.add,
+        removeTrack: musicLibrary.remove,
         setVolume(value) {
             if (!Number.isFinite(value) || disposed) return;
             volume = clampVolume(value);
@@ -310,14 +370,13 @@ export function createAudio(window, resolveSample = name => new URL(`./assets/mi
             if (disposed) return;
             void setEnabled(false);
             disposed = true;
+            musicListeners.clear();
+            musicLibrary.close();
             requests.abort();
             decoded.clear();
             document.removeEventListener('visibilitychange', syncPlayback);
-            window.clearTimeout(musicPausing);
             if (music) {
-                music.pause();
-                music.removeAttribute('src');
-                music.load();
+                releaseMusicTrack();
                 musicSource.disconnect();
             }
             if (context) {

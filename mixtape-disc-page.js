@@ -21,7 +21,7 @@ function setAttribute(element, name, value) {
     else element.setAttribute(name, value);
 }
 
-export function mountDiscPage(panel, onCue) {
+export function mountDiscPage(panel, onCue, onChatOpened) {
     const source = panel.node;
     const doc = source.ownerDocument;
     const win = doc.defaultView;
@@ -365,7 +365,7 @@ export function mountDiscPage(panel, onCue) {
         return row;
     }
 
-    const ui = { root, source, section, field, action, watch, refresh, requestRefresh, setAttribute, showNative: () => setNative(true), cue: onCue };
+    const ui = { root, source, section, field, action, watch, refresh, requestRefresh, setAttribute, showNative: () => setNative(true), cue: onCue, onChatOpened };
     source.dataset.mtDiscMode = 'disc';
     refreshBacking();
     const nativeInput = event => {

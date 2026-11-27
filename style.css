@@ -9,6 +9,8 @@
 @import url("./mixtape-reader.css");
 @import url("./mixtape-reader-art.css");
 @import url("./mixtape-reader-fonts.css");
+@import url("./mixtape-reader-ui.css");
+@import url("./mixtape-title.css");
 
 body.night-signal-theme {
   --SmartThemeBodyColor: #f5dbcd;
@@ -33,6 +35,113 @@ body.night-signal-theme #top-bar,
 body.night-signal-theme #send_form {
   background-color: var(--SmartThemeBlurTintColor);
   border-color: var(--SmartThemeBorderColor);
+}
+
+body.night-signal-theme[data-ns-ui-hide-top-nav] #top-bar,
+body.night-signal-theme[data-ns-ui-hide-top-nav] #top-settings-holder > .drawer > .drawer-toggle {
+  display: none !important;
+}
+
+body.night-signal-reader[data-ns-ui-hide-top-nav] :is(#sheld, #top-settings-holder) {
+  --topBarBlockSize: 0px;
+}
+
+body.night-signal-reader[data-ns-ui-hide-top-nav] .ns-reader-header {
+  padding-block-start: max(6px, env(safe-area-inset-top, 0px));
+}
+
+.ns-theme-toolbar {
+  display: none;
+}
+
+body.night-signal-theme[data-ns-ui-hide-top-nav]:not(.night-signal-reader, .mt-stage-open) .ns-theme-toolbar {
+  position: fixed;
+  z-index: 3006;
+  inset: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-block-size: var(--topBarBlockSize);
+  background: #181716;
+}
+
+.ns-theme-toolbar button {
+  min-block-size: 34px;
+  border: 1px solid rgb(224 196 162 / 38%);
+  border-radius: 6px;
+  padding: 3px 11px;
+  color: #ead4be;
+  background: #2b2723;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ns-reader-player {
+  display: flex;
+  align-items: center;
+  min-inline-size: 0;
+  max-inline-size: min(100%, 320px);
+  gap: 3px;
+}
+
+.ns-reader-player [data-ns-track-step][hidden] {
+  display: none;
+}
+
+.ns-reader-player [data-ns-playback-mode] {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.ns-reader-player [data-ns-track-title] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mt-theme-options-content {
+  display: grid;
+  gap: 10px;
+  padding-block: 8px;
+}
+
+.mt-theme-options-content fieldset {
+  display: grid;
+  gap: 7px;
+  min-inline-size: 0;
+  border: 1px solid var(--SmartThemeBorderColor, #595350);
+  border-radius: 7px;
+  padding: 8px 10px 10px;
+}
+
+.mt-theme-options-content fieldset[hidden] {
+  display: none;
+}
+
+.mt-theme-options-content .mt-theme-import {
+  flex-wrap: wrap;
+}
+
+.mt-theme-options-content :is(select, input[type="file"]) {
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.mt-theme-options-content [role="status"]:empty {
+  display: none;
+}
+
+@media (max-width: 660px) {
+  .ns-reader-player {
+    flex: 1 1 90px;
+    justify-content: flex-end;
+  }
+
+  .ns-reader-tools > [data-ns-floor] {
+    flex: 1 1 5.5em;
+    max-inline-size: min(28vw, 112px);
+  }
 }
 
 body.night-signal-theme #chat .mes,
@@ -63,425 +172,4 @@ body.night-signal-theme #send_textarea {
 #extensionsMenu .night-signal-launcher:focus-visible {
   outline: 2px solid #f4a4b1;
   outline-offset: -2px;
-}
-
-dialog.night-signal {
-  --ns-background: #140f1b;
-  --ns-text: #ffece0;
-  --ns-muted: #bca9b9;
-  --ns-accent: #ffa9ba;
-  --ns-rule: rgb(238 204 225 / 24%);
-  --ns-font: system-ui, "Microsoft YaHei UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
-  --ns-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  --ns-edge: clamp(24px, 4.3vw, 72px);
-  background: var(--ns-background);
-  border: 0;
-  border-radius: 0;
-  box-sizing: border-box;
-  color: var(--ns-text);
-  color-scheme: dark;
-  font: 400 16px/1.5 var(--ns-font);
-  height: 100vh;
-  height: 100dvh;
-  inset: 0;
-  margin: 0;
-  max-height: none;
-  max-width: none;
-  overflow: auto;
-  overscroll-behavior: contain;
-  padding: 0;
-  position: fixed;
-  width: 100%;
-  z-index: 60000;
-}
-
-dialog.night-signal:not([open]),
-.night-signal [hidden] {
-  display: none !important;
-}
-
-dialog.night-signal::backdrop {
-  background: var(--ns-background);
-}
-
-.night-signal *,
-.night-signal *::before,
-.night-signal *::after {
-  box-sizing: border-box;
-}
-
-.night-signal .ns-shell {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
-}
-
-.night-signal .ns-header,
-.night-signal .ns-footer {
-  align-items: center;
-  background: var(--ns-background);
-  display: flex;
-  flex: 0 0 auto;
-  gap: 14px;
-  justify-content: space-between;
-  padding-inline: var(--ns-edge);
-}
-
-.night-signal .ns-header {
-  border-bottom: 1px solid var(--ns-rule);
-  min-height: 61px;
-  padding-top: env(safe-area-inset-top, 0px);
-}
-
-.night-signal .ns-brand {
-  align-items: center;
-  display: inline-flex;
-  font: 700 11px/1.3 var(--ns-mono);
-  gap: 12px;
-  letter-spacing: 0.19em;
-}
-
-.night-signal .ns-brand::before {
-  border-radius: 50%;
-  background: var(--ns-accent);
-  box-shadow: 0 0 0 4px rgb(255 169 186 / 14%);
-  content: "";
-  height: 7px;
-  width: 7px;
-}
-
-.night-signal :is(.ns-close, .ns-back, .ns-sound, .ns-entry) {
-  appearance: none;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  margin: 0;
-  min-height: 44px;
-  text-shadow: none;
-}
-
-.night-signal :is(button, input):focus-visible {
-  outline: 2px solid var(--ns-accent);
-  outline-offset: 3px;
-}
-
-.night-signal :is(.ns-close, .ns-back, .ns-sound) {
-  color: var(--ns-muted);
-  font-size: 13px;
-  padding: 0 8px;
-}
-
-.night-signal :is(.ns-close, .ns-back, .ns-sound):hover,
-.night-signal .ns-sound[aria-pressed="true"] {
-  color: var(--ns-accent);
-}
-
-.night-signal .ns-close > span {
-  color: var(--ns-accent);
-  font: 400 17px/1 var(--ns-mono);
-  margin-left: 6px;
-}
-
-.night-signal .ns-main {
-  display: grid;
-  flex: 1 0 auto;
-  grid-template-columns: minmax(380px, 44%) minmax(0, 1fr);
-  position: relative;
-}
-
-.night-signal .ns-copy {
-  background: radial-gradient(95% 90% at 90% 4%, #241626, var(--ns-background) 85%);
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  padding: clamp(26px, 5.2vh, 66px) clamp(28px, 4vw, 68px) clamp(26px, 5.2vh, 66px) var(--ns-edge);
-  position: relative;
-  z-index: 1;
-}
-
-.night-signal .ns-page {
-  animation: night-signal-tune-in 230ms ease-out both;
-  margin: auto 0;
-  min-width: 0;
-  width: 100%;
-}
-
-@keyframes night-signal-tune-in {
-  from {
-    opacity: 0.45;
-    transform: translateY(6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.night-signal .ns-title {
-  color: var(--ns-text);
-  font-family: var(--ns-font);
-  font-size: clamp(42px, min(7.25vw, 15vh), 116px);
-  font-weight: 850;
-  letter-spacing: -0.085em;
-  line-height: 0.98;
-  margin: 0 0 clamp(24px, 4vh, 46px);
-  text-shadow: none;
-}
-
-.night-signal .ns-title:not(.ns-mixtape-logo) {
-  font-size: clamp(36px, 5.6vw, 78px);
-  line-height: 1.12;
-}
-
-.night-signal .ns-mixtape-logo {
-  position: relative;
-  width: min(100%, 440px);
-  aspect-ratio: 2.352;
-  background: url("./assets/mixtape/title-logo.webp") left center / contain no-repeat;
-}
-
-.night-signal .ns-mixtape-logo > span {
-  position: absolute;
-  height: 1px;
-  width: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.night-signal .ns-menu,
-.night-signal .ns-recent {
-  border-top: 1px solid var(--ns-rule);
-  display: grid;
-  margin: 0;
-  min-width: 0;
-  padding: 0;
-}
-
-.night-signal .ns-entry {
-  align-items: center;
-  border-bottom: 1px solid var(--ns-rule);
-  display: grid;
-  column-gap: 12px;
-  grid-template-columns: minmax(0, 1fr) auto;
-  min-height: 54px;
-  padding: 8px 14px 8px 0;
-  text-align: start;
-  transition: background-color 160ms, color 160ms, padding-inline-start 160ms;
-  width: 100%;
-}
-
-.night-signal .ns-entry:is(:hover, :focus-visible, [data-active="true"]):not(:disabled) {
-  background: rgb(255 169 186 / 10%);
-  color: var(--ns-accent);
-  padding-inline-start: 14px;
-}
-
-.night-signal .ns-entry:disabled {
-  cursor: default;
-  opacity: 0.54;
-}
-
-.night-signal .ns-entry-label,
-.night-signal .ns-entry-detail {
-  grid-column: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.night-signal .ns-entry-label {
-  font-size: clamp(15px, 1.35vw, 20px);
-  font-weight: 650;
-  letter-spacing: 0.035em;
-}
-
-.night-signal .ns-entry-detail {
-  color: var(--ns-muted);
-  font-size: 12px;
-}
-
-.night-signal .ns-entry-detail:empty {
-  display: none;
-}
-
-.night-signal .ns-arrow {
-  align-self: center;
-  color: var(--ns-accent);
-  font: 400 18px/1 var(--ns-mono);
-  grid-area: 1 / 2 / span 2;
-  opacity: 0.6;
-}
-
-.night-signal .ns-entry:is(:hover, :focus-visible, [data-active="true"]) .ns-arrow {
-  opacity: 1;
-}
-
-.night-signal .ns-recent {
-  max-height: min(44vh, 432px);
-  overflow-y: auto;
-  scrollbar-color: #9e637e transparent;
-  scrollbar-width: thin;
-}
-
-.night-signal .ns-recent .ns-entry {
-  row-gap: 1px;
-}
-
-.night-signal .ns-status {
-  color: var(--ns-muted);
-  font-size: 14px;
-  line-height: 1.55;
-  margin: 12px 0 auto;
-}
-
-.night-signal .ns-copy:has(.ns-status:not([hidden])) .ns-page {
-  margin-bottom: 0;
-}
-
-.night-signal .ns-status:empty,
-.night-signal .ns-recent:empty {
-  display: none;
-}
-
-.night-signal .ns-back {
-  margin: 14px 0 0;
-  padding-inline: 0 12px;
-}
-
-.night-signal .ns-art {
-  background: radial-gradient(ellipse at 49% 48%, #26313b 0%, #100d10 72%);
-  border-left: 1px solid var(--ns-rule);
-  min-width: 0;
-  overflow: hidden;
-  position: relative;
-}
-
-.night-signal .ns-art::before,
-.night-signal .ns-art::after {
-  content: "";
-  pointer-events: none;
-  position: absolute;
-}
-
-.night-signal .ns-art::before {
-  inset: 5% 8%;
-  background: url("./assets/mixtape/jewel-cover.webp") center / contain no-repeat;
-  transform: perspective(1300px) rotateX(calc(7deg + var(--ns-tilt-x, 0deg))) rotateY(calc(-14deg + var(--ns-tilt-y, 0deg))) rotateZ(-7deg);
-  filter: drop-shadow(1.6rem 1.8rem 2.4rem #000b);
-  transition: transform 160ms ease-out;
-}
-
-.night-signal .ns-art::after {
-  top: 12%;
-  right: 13%;
-  width: clamp(56px, 18%, 144px);
-  aspect-ratio: 1;
-  transform: rotate(11deg);
-  background: url("./assets/mixtape/hot-stuff.webp") center / contain no-repeat;
-}
-
-.night-signal .ns-footer {
-  border-top: 1px solid var(--ns-rule);
-  min-height: 55px;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-.night-signal .ns-hints {
-  color: var(--ns-muted);
-  display: flex;
-  flex-wrap: wrap;
-  font: 400 11px/1.4 var(--ns-mono);
-  gap: 5px clamp(12px, 2.4vw, 38px);
-}
-
-.night-signal .ns-hints > span {
-  white-space: nowrap;
-}
-
-.night-signal .ns-sound {
-  align-items: center;
-  display: inline-flex;
-  flex: 0 0 auto;
-  gap: 11px;
-  white-space: nowrap;
-}
-
-.night-signal .ns-sound::before {
-  background: currentColor;
-  clip-path: polygon(0 35%, 17% 35%, 17% 65%, 0 65%, 0 35%, 27% 24%, 43% 24%, 43% 76%, 27% 76%, 27% 24%, 54% 0, 70% 0, 70% 100%, 54% 100%, 54% 0, 81% 27%, 97% 27%, 97% 73%, 81% 73%, 81% 27%);
-  content: "";
-  height: 13px;
-  width: 14px;
-}
-
-@media (max-width: 740px) {
-  dialog.night-signal {
-    --ns-edge: clamp(18px, 5.6vw, 32px);
-  }
-
-  .night-signal .ns-header {
-    min-height: calc(49px + env(safe-area-inset-top, 0px));
-  }
-
-  .night-signal .ns-main {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-
-  .night-signal .ns-copy {
-    padding: 25px var(--ns-edge) 26px;
-  }
-
-  .night-signal .ns-art {
-    border-bottom: 1px solid var(--ns-rule);
-    border-left: 0;
-    grid-row: 1;
-    height: clamp(150px, 29vh, 255px);
-    height: clamp(150px, 29dvh, 255px);
-  }
-
-  .night-signal .ns-title {
-    margin-bottom: 18px;
-  }
-
-  .night-signal .ns-mixtape-logo {
-    width: min(72vw, 320px);
-  }
-
-  .night-signal .ns-entry {
-    min-height: 48px;
-  }
-
-  .night-signal .ns-footer {
-    min-height: calc(49px + env(safe-area-inset-bottom, 0px));
-  }
-}
-
-@media (hover: none) and (pointer: coarse) {
-  .night-signal .ns-footer {
-    justify-content: flex-end;
-  }
-
-  .night-signal .ns-hints {
-    display: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .night-signal *,
-  .night-signal *::before,
-  .night-signal *::after {
-    animation: none !important;
-    scroll-behavior: auto !important;
-    transition: none !important;
-  }
-  .night-signal .ns-art::before {
-    transform: perspective(1300px) rotateX(7deg) rotateY(-14deg) rotateZ(-7deg);
-  }
 }

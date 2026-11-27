@@ -1,0 +1,295 @@
+body.night-signal-reader #sheld {
+  --ns-reader-ink-muted: color-mix(in srgb, var(--ns-reader-text) 78%, var(--ns-reader-bg));
+  --ns-reader-control-edge: rgb(224 196 162 / 23%);
+  --ns-reader-control-fill: rgb(19 17 17 / 62%);
+  --ns-reader-control-radius: 6px;
+  --ns-reader-action-size: 30px;
+  --ns-reader-input-size: 37px;
+}
+
+body.night-signal-reader #sheld > #chat > .mes > .mesAvatarWrapper {
+  margin-block-start: 1px;
+  margin-inline-end: 9px;
+  break-after: avoid-column;
+  break-inside: avoid-column;
+}
+
+/* Move the name and its adjacent avatar together at a booklet page break. */
+body.night-signal-reader #sheld > #chat > .mes > .mes_block {
+  break-before: avoid-column;
+}
+
+body.night-signal-reader #sheld > #chat > .mes[is_user="true"] > .mesAvatarWrapper {
+  margin-inline: 9px 0;
+}
+
+body.night-signal-reader #sheld > #chat > .mes .mesAvatarWrapper :is(.avatar, .avatar img, .missing-avatar) {
+  inline-size: 30px;
+  block-size: 30px;
+  border-radius: var(--ns-reader-control-radius);
+}
+
+body.night-signal-reader #sheld > #chat > .mes .mesAvatarWrapper :is(.avatar img, .missing-avatar) {
+  box-sizing: border-box;
+  border: 1px solid var(--ns-reader-edge);
+  background: var(--ns-reader-control-fill);
+  object-fit: cover;
+}
+
+body.night-signal-reader #sheld > #chat > .mes .mesAvatarWrapper .missing-avatar {
+  display: grid;
+  place-items: center;
+  color: var(--ns-reader-ink-muted);
+  font-size: 0.82rem;
+}
+
+body.night-signal-reader #sheld > #chat > .mes > .mes_block > .ch_name {
+  align-items: center;
+  flex-wrap: wrap;
+  min-block-size: 32px;
+  gap: 3px 8px;
+}
+
+body.night-signal-reader #sheld #chat .ch_name > .flex1 {
+  flex: 1 1 min(9em, 45%);
+  min-inline-size: 0;
+}
+
+body.night-signal-reader #sheld #chat .ch_name > .flex1 > .flex-container {
+  flex-wrap: wrap;
+  gap: 2px 7px;
+  min-inline-size: 0;
+}
+
+body.night-signal-reader #sheld #chat .ch_name .name_text {
+  color: var(--ns-reader-text);
+  font-size: 0.98em;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+body.night-signal-reader #sheld #chat .mes[is_user="true"] .ch_name .name_text {
+  color: var(--ns-reader-player);
+}
+
+body.night-signal-reader #sheld #chat .ch_name :is(.timestamp, .timestamp-icon) {
+  color: var(--ns-reader-ink-muted);
+  font-size: clamp(0.69rem, 0.67em, 0.84rem);
+  font-weight: 450;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  opacity: 1;
+}
+
+body.night-signal-reader #sheld #chat .ch_name .timestamp {
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+}
+
+body.night-signal-reader #sheld #chat .mes .ch_name :is(.mes_buttons, .extraMesButtons, .mes_edit_buttons) {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+  filter: none;
+  overflow: visible;
+}
+
+body.night-signal-reader #sheld #chat .mes .ch_name .mes_buttons:has(.extraMesButtons.visible),
+body.night-signal-reader.expandMessageActions #sheld #chat .mes .ch_name .mes_buttons {
+  flex-basis: 100%;
+}
+
+body.night-signal-reader #sheld #chat .mes .ch_name .mes_buttons > .mes_button,
+body.night-signal-reader #sheld #chat .mes :is(.extraMesButtons, .mes_edit_buttons, .mes_reasoning_actions) > :is(.mes_button, .menu_button) {
+  box-sizing: border-box;
+  inline-size: var(--ns-reader-action-size);
+  block-size: var(--ns-reader-action-size);
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ns-reader-control-edge);
+  border-radius: var(--ns-reader-control-radius);
+  background: var(--ns-reader-control-fill);
+  color: var(--ns-reader-ink-muted);
+  font-size: 0.8rem;
+  line-height: calc(var(--ns-reader-action-size) - 2px);
+  text-align: center;
+  opacity: 1;
+  filter: none;
+}
+
+body.night-signal-reader #sheld #chat .mes :is(.ch_name, .mes_reasoning_actions) :is(.mes_button, .menu_button):is(:hover, :focus-visible) {
+  border-color: var(--ns-reader-gold);
+  color: var(--ns-reader-text);
+}
+
+body.night-signal-reader #sheld #chat .mes .mes_reasoning_details {
+  margin: 4px 0 6px;
+}
+
+body.night-signal-reader #sheld #chat .mes .mes_reasoning_summary {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 2px 5px 2px 7px;
+  margin: 0;
+  border: 1px solid var(--ns-reader-control-edge);
+  border-inline-start-color: var(--ns-reader-gold);
+  border-radius: var(--ns-reader-control-radius);
+  background: var(--ns-reader-control-fill);
+  color: var(--ns-reader-ink-muted);
+  font-size: 0.82em;
+  line-height: 1.4;
+  break-after: avoid;
+}
+
+body.night-signal-reader #sheld #chat .mes .mes_reasoning_summary:focus-visible {
+  outline: 2px solid var(--ns-reader-player);
+  outline-offset: 2px;
+}
+
+body.night-signal-reader #sheld #chat .mes .mes_reasoning_header {
+  flex: 1 1 auto;
+  align-items: center;
+  min-block-size: var(--ns-reader-action-size);
+  margin: 0;
+  padding: 2px 23px 2px 4px;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+}
+
+body.night-signal-reader #sheld #chat .mes .mes_reasoning_arrow {
+  color: var(--ns-reader-gold);
+}
+
+body.night-signal-reader #sheld #chat .mes .mes_reasoning_actions {
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 0;
+}
+
+body.night-signal-reader #sheld #chat .mes :is(.mes_reasoning, .reasoning_edit_textarea) {
+  box-sizing: border-box;
+  max-block-size: max(96px, min(32dvh, calc(var(--ns-reader-page-height, 400px) * 0.48)));
+  margin: 4px 0 6px;
+  padding: 7px 10px;
+  border: 1px solid var(--ns-reader-control-edge);
+  border-inline-start-color: var(--ns-reader-gold);
+  border-radius: var(--ns-reader-control-radius);
+  background: rgb(19 17 17 / 30%);
+  color: var(--ns-reader-ink-muted);
+  font-size: 0.89em;
+  line-height: 1.55;
+  overflow: auto;
+  break-inside: avoid;
+}
+
+body.night-signal-reader #sheld #send_form {
+  box-sizing: border-box;
+  padding: 3px;
+  border-color: var(--ns-reader-control-edge);
+  background: linear-gradient(#272727, #18191a);
+  backdrop-filter: none;
+}
+
+body.night-signal-reader #sheld #send_form:has(#send_textarea:focus-visible) {
+  border-color: var(--ns-reader-gold);
+  outline: 1px solid var(--ns-reader-gold);
+}
+
+body.night-signal-reader #sheld #nonQRFormItems {
+  column-gap: 3px;
+  align-items: center;
+}
+
+body.night-signal-reader #sheld :is(#leftSendForm, #rightSendForm) {
+  gap: 3px;
+  padding: 0;
+}
+
+body.night-signal-reader #sheld #send_textarea {
+  --SmartThemeEmColor: var(--ns-reader-ink-muted);
+  min-block-size: var(--ns-reader-input-size);
+  height: var(--ns-reader-input-size);
+  padding-inline: 8px;
+  font-size: max(1rem, var(--mainFontSize, 1rem));
+}
+
+body.night-signal-reader #sheld #send_textarea::placeholder {
+  opacity: 0.88;
+  text-align: start;
+  text-overflow: ellipsis;
+}
+
+body.night-signal-reader #sheld :is(#leftSendForm, #rightSendForm) > div {
+  box-sizing: border-box;
+  inline-size: var(--ns-reader-input-size);
+  block-size: var(--ns-reader-input-size);
+  border: 1px solid var(--ns-reader-control-edge);
+  border-radius: var(--ns-reader-control-radius);
+  background: var(--ns-reader-control-fill);
+  color: var(--ns-reader-ink-muted);
+  font-size: 0.95rem;
+  text-shadow: none;
+  opacity: 1;
+}
+
+body.night-signal-reader #sheld #form_sheld:not(.isExecutingCommandsFromChatInput) #send_but {
+  inline-size: max(53px, var(--ns-reader-input-size));
+  border-color: rgb(218 239 244 / 28%);
+  background: linear-gradient(#a5cbdc, #82aebf);
+  color: #142229;
+}
+
+body.night-signal-reader #sheld #form_sheld.isExecutingCommandsFromChatInput :is(#send_but, #mes_continue) {
+  inline-size: 0;
+  block-size: 0;
+  padding: 0;
+  border: 0;
+}
+
+body.night-signal-reader #sheld #mes_stop {
+  inline-size: auto;
+  block-size: auto;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--ns-reader-quote);
+  font-size: 1.25rem;
+}
+
+body.night-signal-reader #sheld :is(#leftSendForm, #rightSendForm) > div:is(:hover, :focus-visible) {
+  border-color: var(--ns-reader-gold);
+}
+
+@media (pointer: coarse) {
+  body.night-signal-reader #sheld {
+    --ns-reader-action-size: 40px;
+    --ns-reader-input-size: 42px;
+  }
+}
+
+@media (max-width: 660px) {
+  body.night-signal-reader #sheld #send_textarea::placeholder {
+    font-size: 0.8rem;
+  }
+}
+
+@layer night-signal-reader-display {
+  body.night-signal-reader[data-ns-ui-hide-reasoning] #sheld #chat .mes_reasoning_details:not(:has(.reasoning_edit_textarea)),
+  body.night-signal-reader[data-ns-ui-hide-actions] #sheld #chat .ch_name .mes_buttons,
+  body.night-signal-reader[data-ns-ui-hide-actions] #sheld #chat .mes_reasoning_actions > .mes_button,
+  body.night-signal-reader[data-ns-ui-hide-names] #sheld #chat .ch_name .name_text,
+  body.night-signal-reader[data-ns-ui-hide-avatars] #sheld #chat .mesAvatarWrapper,
+  body.night-signal-reader[data-ns-ui-hide-timestamps] #sheld #chat .ch_name :is(.timestamp, .timestamp-icon),
+  body.night-signal-reader[data-ns-ui-hide-composer-tools] #sheld #send_form :is(#leftSendForm, #mes_continue, #mes_impersonate, #qr--bar) {
+    display: none !important;
+  }
+}
+
+body.night-signal-reader[data-ns-ui-hide-actions][data-ns-ui-hide-names][data-ns-ui-hide-timestamps] #sheld #chat > .mes > .mes_block > .ch_name {
+  min-block-size: 0;
+  gap: 0;
+}

@@ -5,6 +5,9 @@ import {
     readerPageOffset,
     resolveReaderAnchor,
 } from './mixtape-reader-layout.js';
+import { musicModes } from './mixtape-music.js';
+
+const playbackModes = Object.keys(musicModes);
 
 const defaults = {
     enabled: true,
@@ -51,12 +54,18 @@ function createControls(document) {
     header.className = 'ns-reader-header';
     header.innerHTML = `
         <div class="ns-reader-brand">夜间电台 <i aria-hidden="true">///</i><span>聊天记录</span></div>
-        <button type="button" class="ns-reader-track" aria-pressed="false" aria-label="播放 Slater Synth Track">
-            <span aria-hidden="true">▶</span> Slater Synth Track
-        </button>
+        <div class="ns-reader-player" role="group" aria-label="音乐播放">
+            <button type="button" data-ns-track-step="-1" aria-label="上一首" hidden>‹</button>
+            <button type="button" class="ns-reader-track" aria-pressed="false">
+                <span aria-hidden="true">▶</span><span data-ns-track-title></span>
+            </button>
+            <button type="button" data-ns-track-step="1" aria-label="下一首" hidden>›</button>
+            <button type="button" data-ns-playback-mode></button>
+        </div>
         <div class="ns-reader-tools">
             <button type="button" data-ns-world>世界书</button>
             <select data-ns-floor aria-label="跳到楼层"><option value="">跳到楼层</option></select>
+            <button type="button" data-ns-extensions>扩展程序</button>
             <details class="ns-reader-options">
                 <summary>阅读设置</summary>
                 <div class="ns-reader-settings">
@@ -92,7 +101,6 @@ function createArtwork(document) {
     art.className = 'ns-reader-art';
     art.setAttribute('aria-hidden', 'true');
     art.innerHTML = `
-        <i class="ns-reader-cover"><span class="mt-scene-reflection"></span></i>
         <i class="ns-reader-art-disc"></i>
         <i class="ns-reader-art-case"></i>
         <i class="ns-reader-art-station"></i>
@@ -100,7 +108,9 @@ function createArtwork(document) {
     return art;
 }
 
-export function mountMixtapeReader(document, { context, stored, save, loadHistory, openWorld, playTrack }) {
+export function mountMixtapeReader(document, {
+    context, stored, save, loadHistory, openWorld, openExtensions, playTrack, subscribeMusic, changeTrack, setMusicMode,
+}) {
     const window = document.defaultView;
     const chat = document.querySelector('#sheld > #chat');
     const composer = document.querySelector('#sheld > #form_sheld');
@@ -111,10 +121,12 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
     const { signal } = events;
     const { header, pages } = createControls(document);
     const art = createArtwork(document);
-    const cover = art.querySelector('.ns-reader-cover');
     const floor = header.querySelector('[data-ns-floor]');
     const track = header.querySelector('.ns-reader-track');
     const trackIcon = track.firstElementChild;
+    const trackTitle = track.querySelector('[data-ns-track-title]');
+    const skipTracks = [...header.querySelectorAll('[data-ns-track-step]')];
+    const modeButton = header.querySelector('[data-ns-playback-mode]');
     const inputs = [...header.querySelectorAll('[data-ns-reader-setting]')];
     const localFontNote = header.querySelector('[data-ns-reader-local-font]');
     const scaleValue = header.querySelector('[data-ns-scale]');
@@ -131,7 +143,7 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
 
     let active = false;
     let frame = 0;
-    let reflectionFrame = 0;
+    let paperLightFrame = 0;
     let layout = { stride: 0, pages: 0, visibleLeaves: 1 };
     let anchor = null;
     let currentPage = 0;
@@ -147,18 +159,18 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
     const spreadStart = page => Math.floor(page / layout.visibleLeaves) * layout.visibleLeaves;
     const lastSpread = () => spreadStart(Math.max(0, layout.pages - 1));
 
-    function moveCoverReflection(event) {
-        if (!active || reflectionFrame || reducedMotion.matches || context.powerUserSettings?.reduced_motion) return;
+    function movePaperLight(event) {
+        if (!active || paperLightFrame || reducedMotion.matches || context.powerUserSettings?.reduced_motion) return;
         const { clientX, clientY } = event;
-        reflectionFrame = window.requestAnimationFrame(() => {
-            reflectionFrame = 0;
+        paperLightFrame = window.requestAnimationFrame(() => {
+            paperLightFrame = 0;
             if (!active || reducedMotion.matches || context.powerUserSettings?.reduced_motion) return;
             const { left, top, width, height } = chat.getBoundingClientRect();
             if (!width || !height) return;
-            const x = Math.round(((clientX - left) / width - 0.5) * 126);
-            const y = Math.round(((clientY - top) / height - 0.5) * 90);
-            cover.style.setProperty('--mt-reflection-x', `${x}%`);
-            cover.style.setProperty('--mt-reflection-y', `${y}%`);
+            const x = Math.round(18 + Math.min(1, Math.max(0, (clientX - left) / width)) * 64);
+            const y = Math.round(14 + Math.min(1, Math.max(0, (clientY - top) / height)) * 62);
+            shell.style.setProperty('--ns-paper-light-x', `${x}%`);
+            shell.style.setProperty('--ns-paper-light-y', `${y}%`);
         });
     }
 
@@ -178,9 +190,26 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
 
     function showTrackState(playing) {
         track.setAttribute('aria-pressed', String(playing));
-        track.setAttribute('aria-label', `${playing ? '暂停' : '播放'} Slater Synth Track`);
+        track.setAttribute('aria-label', `${playing ? '暂停' : '播放'} ${trackTitle.textContent}`);
         trackIcon.textContent = playing ? 'Ⅱ' : '▶';
     }
+
+    const unsubscribeMusic = subscribeMusic(({ tracks, selectedId, mode }) => {
+        const title = tracks.find(item => item.id === selectedId)?.title ?? '';
+        if (trackTitle.textContent !== title) {
+            trackTitle.textContent = title;
+            track.title = title;
+            showTrackState(track.getAttribute('aria-pressed') === 'true');
+        }
+        for (const button of skipTracks) button.hidden = tracks.length < 2;
+        if (modeButton.dataset.nsPlaybackMode !== mode) {
+            const label = musicModes[mode];
+            modeButton.dataset.nsPlaybackMode = mode;
+            modeButton.textContent = mode === 'repeat-one' ? '单曲' : label;
+            modeButton.title = `播放模式：${label}`;
+            modeButton.setAttribute('aria-label', `当前${label}，切换音乐模式`);
+        }
+    });
 
     function applyPreferences() {
         shell.style.setProperty('--ns-reader-scale', String(preferences.scale / 100));
@@ -480,7 +509,7 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
         characterData: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ['class', 'style', 'hidden', 'height', 'width', 'mesid'],
+        attributeFilter: ['class', 'style', 'hidden', 'height', 'width', 'mesid', 'open'],
     });
     const stylesheet = 'style, link[rel~="stylesheet"]';
     const styles = new MutationObserver(records => {
@@ -502,8 +531,8 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
         if (event.target.matches?.(stylesheet)) queueLayout();
     }, { capture: true, signal });
     chat.addEventListener('load', queueLayout, { capture: true, signal });
-    chat.addEventListener('pointerdown', moveCoverReflection, { passive: true, signal });
-    chat.addEventListener('pointermove', moveCoverReflection, { passive: true, signal });
+    chat.addEventListener('pointerdown', movePaperLight, { passive: true, signal });
+    chat.addEventListener('pointermove', movePaperLight, { passive: true, signal });
     chat.addEventListener('scroll', () => {
         if (!active || turning || frame || !layout.stride || pageWidth !== chat.clientWidth) return;
         if (Math.abs(chat.scrollLeft - readerPageOffset(layout, currentPage)) <= 1) return;
@@ -532,6 +561,14 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
         void jumpToFloor(value);
     }, { signal });
     header.querySelector('[data-ns-world]').addEventListener('click', openWorld, { signal });
+    header.querySelector('[data-ns-extensions]').addEventListener('click', openExtensions, { signal });
+    for (const button of skipTracks) {
+        button.addEventListener('click', () => changeTrack(Number(button.dataset.nsTrackStep)), { signal });
+    }
+    modeButton.addEventListener('click', () => {
+        const current = playbackModes.indexOf(modeButton.dataset.nsPlaybackMode);
+        setMusicMode(playbackModes[(current + 1) % playbackModes.length]);
+    }, { signal });
     track.addEventListener('click', async () => {
         track.disabled = true;
         try {
@@ -566,16 +603,18 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
     syncActive();
     return {
         setEnabled,
+        refresh: queueLayout,
         stopTrack() {
             void playTrack(false);
             showTrackState(false);
         },
         get enabled() { return preferences.enabled; },
         dispose() {
+            unsubscribeMusic();
             epoch++;
             cancelTurn();
             window.cancelAnimationFrame(frame);
-            window.cancelAnimationFrame(reflectionFrame);
+            window.cancelAnimationFrame(paperLightFrame);
             events.abort();
             resize.disconnect();
             messages.disconnect();
@@ -591,6 +630,8 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
                 shell.style.removeProperty(`--ns-reader-${property}`);
             }
             for (const edge of ['top', 'height', 'left', 'width']) shell.style.removeProperty(`--ns-reader-art-${edge}`);
+            shell.style.removeProperty('--ns-paper-light-x');
+            shell.style.removeProperty('--ns-paper-light-y');
             chat.scrollLeft = 0;
             header.remove();
             pages.remove();

@@ -25,7 +25,7 @@ const confirmSelector = [
     '.inline-drawer-toggle', 'summary', 'input[type="checkbox"]', 'input[type="radio"]',
 ].join(',');
 
-export function mountPanelTheme({ document, onPanel, onCue, onOpenFailed }) {
+export function mountPanelTheme({ document, onPanel, onCue, onOpenFailed, onChatOpened }) {
     const win = document.defaultView;
     const panels = new Map();
     for (const [id, label, nativeId] of nativePanels) {
@@ -54,7 +54,7 @@ export function mountPanelTheme({ document, onPanel, onCue, onOpenFailed }) {
         active?.node.removeAttribute('data-mt-entry-motion');
         active = panel;
         if (panel) panel.node.dataset.mtNativePanel = panel.id;
-        disposeDetails = panel ? mountDiscPage(panel, onCue) : undefined;
+        disposeDetails = panel ? mountDiscPage(panel, onCue, onChatOpened) : undefined;
         onPanel?.(panel && { id: panel.id, label: panel.label, node: panel.node });
     }
 

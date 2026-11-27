@@ -1,0 +1,468 @@
+dialog.night-signal {
+  --ns-background: #0e0f11;
+  --ns-text: #f0ebe1;
+  --ns-muted: #c6c7c4;
+  --ns-accent: #bde2ae;
+  --ns-edge: #626d72;
+  --ns-font: system-ui, "Microsoft YaHei UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  --ns-md-face: url("./assets/mixtape/title-md-player.webp");
+  position: fixed;
+  z-index: 60000;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-radius: 0;
+  background: var(--ns-background);
+  color: var(--ns-text);
+  color-scheme: dark;
+  font: 400 16px/1.5 var(--ns-font);
+}
+
+dialog.night-signal::backdrop { background: var(--ns-background); }
+
+dialog.night-signal:not([open]),
+.night-signal [hidden] { display: none !important; }
+
+.night-signal *,
+.night-signal *::before,
+.night-signal *::after { box-sizing: border-box; }
+
+.night-signal .ns-shell {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 6px;
+  min-block-size: 100%;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+    max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+
+.night-signal button {
+  appearance: none;
+  margin: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-shadow: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.night-signal button:focus-visible {
+  outline: 2px solid var(--ns-accent);
+  outline-offset: 2px;
+}
+
+.night-signal .ns-md-device {
+  position: relative;
+  container-type: inline-size;
+  width: min(100%, 1320px, calc((100dvh - 36px) * 1.599));
+  aspect-ratio: 1586 / 992;
+  isolation: isolate;
+  background: var(--ns-md-face) center / 100% 100% no-repeat, #0e1820;
+}
+
+.night-signal .ns-md-device .ns-title,
+.night-signal .ns-md-device .ns-entry > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.night-signal .ns-md-face { display: none; }
+
+.night-signal .ns-menu { position: absolute; inset: 0; }
+
+.night-signal .ns-menu .ns-entry {
+  position: absolute;
+  inset: var(--key-top) auto auto var(--key-left);
+  inline-size: var(--key-width);
+  block-size: var(--key-height);
+  padding: 0;
+  border-radius: var(--key-radius, 8%);
+  clip-path: var(--key-shape, none);
+  transition: background-color 110ms ease, box-shadow 110ms ease;
+}
+
+/* Hit areas follow the four metal key faces in the 1586 × 992 title image. */
+.night-signal .ns-menu [data-action="continue"] {
+  --key-left: 61.6%; --key-top: 35.8%; --key-width: 20.4%; --key-height: 33%;
+  --key-radius: 50%;
+}
+
+.night-signal .ns-menu [data-action="recent"] {
+  --key-left: 50.1%; --key-top: 30.8%; --key-width: 13.3%; --key-height: 38.8%;
+  --key-shape: polygon(42% 0, 52% 0, 63% 5%, 98% 26%, 100% 30%, 90% 42%, 84% 52%, 83% 63%, 89% 73%, 86% 77%, 63% 87%, 33% 99%, 22% 99%, 12% 93%, 4% 82%, 0 65%, 1% 47%, 6% 33%, 15% 20%, 27% 10%);
+}
+
+.night-signal .ns-menu [data-action="characters"] {
+  --key-left: 58.4%; --key-top: 21.3%; --key-width: 25.6%; --key-height: 19.5%;
+  --key-shape: polygon(0 34%, 4% 24%, 15% 12%, 26% 5%, 45% 0, 59% 2%, 73% 10%, 88% 33%, 99% 62%, 100% 71%, 86% 99%, 82% 100%, 73% 88%, 60% 77%, 48% 74%, 37% 75%, 27% 82%, 24% 87%, 16% 79%, 8% 63%, 0 43%);
+}
+
+.night-signal .ns-menu [data-action="settings"] {
+  --key-left: 56.6%; --key-top: 63.8%; --key-width: 25%; --key-height: 18%;
+  --key-shape: polygon(1% 49%, 9% 34%, 24% 4%, 28% 0, 37% 16%, 47% 28%, 59% 33%, 70% 31%, 80% 24%, 87% 12%, 91% 12%, 99% 35%, 100% 44%, 96% 54%, 86% 72%, 69% 89%, 51% 99%, 34% 97%, 20% 87%, 7% 69%, 0 59%);
+}
+
+.night-signal .ns-menu .ns-entry:is(:hover, [data-active="true"]) {
+  background: rgb(220 238 184 / 10%);
+}
+
+.night-signal .ns-menu .ns-entry:focus-visible {
+  background: rgb(220 244 168 / 24%);
+  outline-offset: -4px;
+}
+
+.night-signal .ns-menu .ns-entry:active { background: rgb(10 15 19 / 28%); }
+
+.night-signal .ns-md-device :is(.ns-sound, .ns-close, .ns-author) {
+  position: absolute;
+  z-index: 1;
+  font-size: clamp(11px, 1.22cqw, 16px);
+  line-height: 1.2;
+}
+
+.night-signal .ns-sound {
+  inset: 11.9% 11.8% auto auto;
+  inline-size: 15.4%;
+  min-inline-size: 72px;
+  min-block-size: 34px;
+  block-size: 5.6%;
+  padding: 0 max(34px, 7.4cqw) 0 5px;
+  border-radius: 10% / 42%;
+  background: linear-gradient(174deg, #193748, #122835 56%, #172d3a);
+  color: #ddcbb4;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.night-signal .ns-sound::before,
+.night-signal .ns-sound::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+}
+
+.night-signal .ns-sound::before {
+  inset: 9% 2% 9% auto;
+  inline-size: 54%;
+  border: 1px solid #6d6358;
+  border-radius: 30% / 50%;
+  background: #242324;
+  box-shadow: inset 0 4px 6px #0c0a09;
+}
+
+.night-signal .ns-sound::after {
+  inset: 20% 25% 20% auto;
+  inline-size: 27%;
+  border-radius: 28% / 50%;
+  background: repeating-linear-gradient(90deg, #966344 0 15%, #a7754e 15% 20%);
+  box-shadow: inset 0 1px 1px #fbcb8fa8, 0 2px 2px #0a0907;
+  transition: translate 130ms ease, background-color 130ms ease;
+}
+
+.night-signal .ns-sound[aria-pressed="true"]::after {
+  translate: 64% 0;
+  background: repeating-linear-gradient(90deg, #d09259 0 15%, #fbc286 15% 20%);
+}
+
+.night-signal .ns-close {
+  inset: auto 11.7% 9.8% auto;
+  min-inline-size: 50px;
+  min-block-size: 30px;
+  padding: 5px 12px;
+  border: 1px solid #59636b;
+  border-radius: 6px;
+  background: linear-gradient(#263643, #18222a);
+  box-shadow: inset 0 1px 0 #c2d4db35, 0 2px 2px #080c0f;
+  color: #e0d8ca;
+  white-space: nowrap;
+}
+
+.night-signal .ns-close:is(:hover, :focus-visible) { color: var(--ns-accent); }
+.night-signal .ns-close:active { box-shadow: inset 0 2px 3px #07090c; }
+
+.night-signal .ns-author {
+  inset: auto auto 10.1% 35.2%;
+  color: #cad0d0;
+  font-family: ui-monospace, Consolas, monospace;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-shadow: 0 1px #101e26, 0 -1px #e3ebed30;
+}
+
+.night-signal .ns-md-history {
+  display: grid;
+  gap: 14px;
+  inline-size: min(100%, 620px);
+  padding: clamp(20px, 4vw, 38px);
+  border: 1px solid #61727a;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #21394a, #15232e 75%);
+  box-shadow: inset 0 2px #93a9b445, 0 8px 0 #0c161e, 0 20px 60px #080a0ca6;
+}
+
+.night-signal .ns-md-history .ns-title {
+  margin: 0;
+  padding: 11px 15px;
+  border: 5px solid #0b1114;
+  border-radius: 9px;
+  background: linear-gradient(#b5e4a7, #8ecb94);
+  box-shadow: inset 0 3px 5px #193b2469;
+  color: #172e22;
+  font-size: clamp(18px, 4vw, 27px);
+  line-height: 1.2;
+}
+
+.night-signal .ns-recent {
+  display: grid;
+  gap: 5px;
+  max-block-size: min(54dvh, 390px);
+  margin: 0;
+  overflow-y: auto;
+  scrollbar-color: #8da1a7 #1c2931;
+  scrollbar-width: thin;
+}
+
+.night-signal .ns-recent .ns-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 12px;
+  align-items: center;
+  min-block-size: 52px;
+  padding: 7px 12px;
+  border: 1px solid #53626b;
+  border-radius: 5px;
+  background: #1a2933;
+  text-align: start;
+}
+
+.night-signal .ns-recent .ns-entry-label,
+.night-signal .ns-recent .ns-entry-detail {
+  grid-column: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.night-signal .ns-recent .ns-entry-detail { color: var(--ns-muted); font-size: 12px; }
+.night-signal .ns-entry-detail:empty,
+.night-signal .ns-recent:empty { display: none; }
+.night-signal .ns-recent .ns-arrow { grid-area: 1 / 2 / span 2; }
+
+.night-signal .ns-recent .ns-entry:is(:hover, :focus-visible, [data-active="true"]) {
+  border-color: #a6bfaa;
+  background: #2c4147;
+}
+
+.night-signal .ns-back {
+  justify-self: start;
+  min-block-size: 44px;
+  padding: 5px 14px;
+  border: 1px solid #687982;
+  border-radius: 6px;
+  background: linear-gradient(#3c4d54, #24353e);
+  font-size: 14px;
+}
+
+.night-signal .ns-status {
+  max-inline-size: min(100%, 620px);
+  margin: 6px 0 0;
+  color: var(--ns-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+@media (pointer: coarse) {
+  .night-signal .ns-md-device :is(.ns-sound, .ns-close) { min-block-size: 44px; }
+}
+
+@media (max-width: 660px) and (orientation: portrait) {
+  .night-signal .ns-shell { padding-inline: max(12px, env(safe-area-inset-left, 0px)) max(12px, env(safe-area-inset-right, 0px)); }
+
+  .night-signal .ns-md-device {
+    display: grid;
+    gap: 8px;
+    inline-size: min(100%, 430px);
+    aspect-ratio: auto;
+    padding: 14px 12px 58px;
+    border: 3px solid #30383c;
+    border-radius: 27px;
+    background: repeating-linear-gradient(0deg, #bdced205 0 1px, transparent 1px 3px),
+      linear-gradient(138deg, #284658, #152b3a 75%);
+    box-shadow: inset 0 2px 0 #99adb066, inset 0 0 0 3px #10202d, 0 8px 0 #080d11, 0 22px 48px #07090cb8;
+  }
+
+  .night-signal .ns-md-face {
+    display: block;
+    inline-size: 100%;
+    aspect-ratio: 1.08;
+    border-radius: 15px 15px 8px 8px;
+    background: var(--ns-md-face) 11.1% 49% / 260% auto no-repeat;
+    box-shadow: inset 0 0 9px #0d1a24;
+  }
+
+  .night-signal .ns-menu {
+    position: relative;
+    inset: auto;
+    justify-self: center;
+    inline-size: min(100%, 312px);
+    aspect-ratio: 1.29;
+    border: 4px solid #181d22;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 48% 39%, #31383d, #1a2026 61%, #0f151a 75%);
+    box-shadow: inset 0 0 0 2px #7c7f7a50, 0 3px 9px #0b1117;
+  }
+
+  .night-signal .ns-menu .ns-entry {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 2px;
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    padding: 3px;
+    border: 1px solid #5c5550;
+    background: linear-gradient(138deg, #d6c4b6, #b9a498 55%, #8c7d73);
+    box-shadow: inset 0 1px 1px #f8e5cf, inset 0 -2px 4px #5f5349, 0 3px 4px #070b0d;
+    color: #171515;
+    clip-path: none;
+    font: 700 clamp(12px, 4.4cqw, 16px)/1.15 var(--ns-font);
+    text-align: center;
+  }
+
+  .night-signal .ns-menu .ns-entry::before {
+    content: var(--key-icon);
+    font: 700 clamp(14px, 5.1cqw, 18px)/1 var(--ns-font);
+  }
+
+  .night-signal .ns-menu .ns-entry:is(:hover, [data-active="true"]) {
+    background: linear-gradient(138deg, #e3d0b9, #c8b49f 58%, #9e8c7e);
+  }
+
+  .night-signal .ns-menu .ns-entry:focus-visible { outline-offset: 1px; }
+  .night-signal .ns-menu .ns-entry:active { box-shadow: inset 0 3px 6px #483e37; }
+
+  .night-signal .ns-md-device .ns-menu .ns-entry-label {
+    position: static;
+    inline-size: auto;
+    block-size: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+
+  .night-signal .ns-menu [data-action="continue"] {
+    --key-left: 36%; --key-top: 27%; --key-width: 42%; --key-height: 52%;
+    --key-icon: "▶";
+  }
+
+  .night-signal .ns-menu [data-action="recent"] {
+    --key-left: 5%; --key-top: 28%; --key-width: 29%; --key-height: 47%;
+    --key-radius: 42% 24% 24% 42%;
+    --key-icon: "◀◀";
+  }
+
+  .night-signal .ns-menu [data-action="characters"] {
+    --key-left: 32%; --key-top: 4%; --key-width: 49%; --key-height: 21%;
+    --key-radius: 44% 44% 18% 18%;
+    --key-icon: "▣";
+  }
+
+  .night-signal .ns-menu [data-action="settings"] {
+    --key-left: 32%; --key-top: 81%; --key-width: 49%; --key-height: 17%;
+    --key-radius: 18% 18% 44% 44%;
+    --key-icon: "⚙";
+    grid-auto-flow: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .night-signal .ns-sound {
+    inset: auto auto 8px 12px;
+    inline-size: 102px;
+    block-size: 44px;
+    padding-inline-end: 54px;
+  }
+
+  .night-signal .ns-close { inset: auto 12px 8px auto; min-block-size: 44px; }
+  .night-signal .ns-author { inset: auto auto 24px 50%; translate: -50% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .night-signal *, .night-signal *::after { transition: none !important; }
+}
+
+@media (forced-colors: active) {
+  .night-signal .ns-md-device {
+    display: grid;
+    gap: 8px;
+    inline-size: min(100%, 540px);
+    padding: 16px;
+    border: 2px solid CanvasText;
+    border-radius: 12px;
+    background: Canvas;
+    aspect-ratio: auto;
+  }
+
+  .night-signal .ns-md-face { display: none; }
+
+  .night-signal .ns-md-device .ns-title,
+  .night-signal .ns-md-device .ns-menu .ns-entry-label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+
+  .night-signal .ns-md-device .ns-title { margin: 0; font-size: 22px; }
+
+  .night-signal .ns-menu {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    inline-size: 100%;
+    gap: 8px;
+    border: 0;
+    border-radius: 0;
+    background: Canvas;
+    aspect-ratio: auto;
+  }
+
+  .night-signal .ns-menu .ns-entry,
+  .night-signal .ns-md-device :is(.ns-sound, .ns-close) {
+    position: static;
+    display: block;
+    inline-size: auto;
+    block-size: auto;
+    min-block-size: 44px;
+    padding: 5px;
+    border: 1px solid ButtonText;
+    border-radius: 5px;
+    background: ButtonFace !important;
+    color: ButtonText;
+    clip-path: none;
+  }
+
+  .night-signal .ns-menu .ns-entry::before,
+  .night-signal .ns-sound::before,
+  .night-signal .ns-sound::after { display: none; }
+  .night-signal .ns-md-device .ns-author { position: static; translate: none; text-align: center; }
+}

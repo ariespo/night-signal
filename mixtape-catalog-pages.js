@@ -1,3 +1,6 @@
+import { isGenerating, setActiveCharacter } from '/script.js';
+import { appearanceFields, audioFields, behaviorFields } from './mixtape-options.js';
+
 function caption(node) {
     return node?.textContent.replace(/\s+/g, ' ').trim() || '';
 }
@@ -134,10 +137,25 @@ function renderExtensions(ui) {
     ui.action(manage, '安装扩展', '#third_party_extension_button');
 
     const theme = ui.section('夜间电台');
-    const labels = ['总音量', '音乐', '环境声', '过场音效', '操作音效', '启动时打开标题菜单', '手柄切换设置板块'];
-    for (const [index, label] of labels.entries()) {
-        ui.field(theme, label, `.mt-theme-options > label:nth-of-type(${index + 1}) input`, { event: 'input', allowHidden: true });
+    const appearance = ui.section('界面显示');
+    const audio = ui.section('音乐与音效');
+    for (const [group, fields] of [[theme, behaviorFields], [appearance, appearanceFields], [audio, audioFields]]) {
+        for (const [key, label] of fields) {
+            ui.field(group, label, `[data-ns-theme-option="${key}"]`, { event: 'input', allowHidden: true });
+        }
     }
+    ui.field(audio, '当前曲目', '[data-ns-music-selection]', { event: 'change', allowHidden: true });
+    ui.field(audio, '播放模式', '[data-ns-music-mode]', { event: 'change', allowHidden: true });
+    ui.action(audio, '管理曲目', '#night-signal-music-library', {
+        shown: () => Boolean(ui.source.querySelector('#night-signal-music-library')),
+        run() {
+            const settings = ui.source.querySelector('#night-signal-theme-options');
+            if (!settings) return;
+            ui.showNative();
+            settings.open = true;
+            settings.querySelector('#night-signal-music-library')?.scrollIntoView({ block: 'center' });
+        },
+    });
 
     const plugins = ui.section('扩展选项');
     renderList(ui, plugins, () => {
@@ -229,10 +247,11 @@ function renderCharacters(ui) {
     tools.append(summary);
     toolbar.append(tools);
     const filters = ui.section('', tools);
+    let openingChat = false;
 
     function updateView() {
-        const edit = shown(source.querySelector('#rm_ch_create_block'), source);
-        const groupOpen = !edit && shown(source.querySelector('#rm_group_chats_block'), source);
+        const edit = !openingChat && shown(source.querySelector('#rm_ch_create_block'), source);
+        const groupOpen = !openingChat && !edit && shown(source.querySelector('#rm_group_chats_block'), source);
         const pause = !edit && !groupOpen && source.dataset.mtDiscMode === 'disc';
         ui.setAttribute(listPage, 'hidden', edit || groupOpen ? '' : null);
         ui.setAttribute(editPage, 'hidden', edit ? null : '');
@@ -258,13 +277,63 @@ function renderCharacters(ui) {
     ui.action(filters, '创建群聊', '#rm_button_group_chats', { value: '创建' });
     const list = doc.createElement('div');
     list.className = 'mt-character-results';
-    listPage.append(list);
+    const status = doc.createElement('p');
+    status.className = 'mt-disc-catalog-empty';
+    status.setAttribute('role', 'status');
+    status.hidden = true;
+    listPage.append(status, list);
+
+    function report(message) {
+        status.textContent = message;
+        status.hidden = !message;
+    }
+
+    async function openCharacter(node) {
+        if (openingChat) return;
+        if (isGenerating()) {
+            report('请等当前回复生成完毕后再切换聊天。');
+            return;
+        }
+        const key = node.dataset.chid;
+        const id = Number(key);
+        const getContext = () => doc.defaultView.SillyTavern.getContext();
+        const context = getContext();
+        const avatar = key && context.characters[id]?.avatar;
+        if (!avatar) {
+            report('找不到这张角色卡。');
+            return;
+        }
+
+        openingChat = true;
+        report('');
+        try {
+            if (context.groupId || String(context.characterId) !== key || !context.getCurrentChatId()) {
+                await context.selectCharacterById(id, { switchMenu: false });
+            }
+            const current = getContext();
+            if (current.groupId || current.characters[current.characterId]?.avatar !== avatar || !current.getCurrentChatId()) {
+                report('暂时无法打开这张角色卡的聊天。');
+                return;
+            }
+            setActiveCharacter(avatar);
+            current.saveSettingsDebounced();
+            if (root.isConnected) ui.onChatOpened?.();
+        } catch (error) {
+            console.warn('[Night Signal] Unable to open character chat', error);
+            report('暂时无法打开这张角色卡的聊天。');
+        } finally {
+            openingChat = false;
+            if (root.isConnected) ui.requestRefresh();
+        }
+    }
+
     renderList(ui, list, () => availableItems(source.querySelector('#rm_print_characters_block'), '.character_select, .group_select, .bogus_folder_select').map(node => {
-        const kind = node.matches('.character_select') ? '角色卡' : node.matches('.group_select') ? '群聊' : '文件夹';
+        const isCharacter = node.matches('.character_select');
+        const kind = isCharacter ? '角色卡' : node.matches('.group_select') ? '群聊' : '文件夹';
         const avatar = node.querySelector('img');
         const key = node.getAttribute('data-chid') ?? node.getAttribute('grid') ?? node.getAttribute('tagid');
         const name = caption(node.querySelector('.ch_name, .group_name, .bogus_folder_name')) || avatar?.alt || '未命名';
-        return { key: key === null ? node : `${kind}:${key}`, name, value: kind, avatar: avatar?.getAttribute('src'), node };
+        return { key: key === null ? node : `${kind}:${key}`, name, value: kind, avatar: avatar?.getAttribute('src'), node, activate: isCharacter ? openCharacter : undefined };
     }), '没有找到角色或群聊', true);
 
     const pages = ui.section('', listPage);
