@@ -14,7 +14,7 @@ GitHub 提供安装和更新。装好以后，页面、字体、图像和声音�
 
 ### 其他安装方式
 
-**手动安装**。从 [GitHub Releases](https://github.com/ariespo/night-signal/releases) 下载并解压 `night-signal-1.10.0.zip`，将其中的 `night-signal` 文件夹放入 SillyTavern 的 `data/<用户名>/extensions/`。默认位置为 `data/default-user/extensions/night-signal/`。更新时覆盖同名文件并刷新酒馆。若曾手动安装且想改用 GitHub 更新，可先备份现有扩展目录并将它移到 `extensions/` 之外，再用上面的链接安装。
+**手动安装**。从 [GitHub Releases](https://github.com/ariespo/night-signal/releases) 下载并解压 `night-signal-1.10.1.zip`，将其中的 `night-signal` 文件夹放入 SillyTavern 的 `data/<用户名>/extensions/`。默认位置为 `data/default-user/extensions/night-signal/`。更新时覆盖同名文件并刷新酒馆。若曾手动安装且想改用 GitHub 更新，可先备份现有扩展目录并将它移到 `extensions/` 之外，再用上面的链接安装。
 
 **酒馆助手版**。从 [GitHub Releases](https://github.com/ariespo/night-signal/releases) 下载「酒馆助手全局脚本（JSON）」，在「酒馆助手 → 脚本 → 全局脚本 → 导入」选择下载的文件，然后开启「夜间电台」。原生扩展和全局脚本任选一种。
 
@@ -22,8 +22,8 @@ GitHub 提供安装和更新。装好以后，页面、字体、图像和声音�
 
 ## 操作
 
-- 标题页是一台带 `poaries` 作者铭刻的深蓝 MD 录音机。中央播放键继续聊天，左侧回看键打开最近聊天，上方卡匣键选择角色，下方齿轮键打开设置。方向键可切换焦点，Enter 确认，Esc 返回。
-- 打开聊天后会进入歌词内页。大屏按左页、右页的顺序读，手机按单页读。底部箭头翻阅读页，「跳到楼层」按酒馆的消息编号定位。分页随字号和屏幕尺寸调整。页数后的 `+` 表示还有更早的聊天，继续往前翻可加载。
+- 标题页默认使用烟茶色透明 MD，可在「扩展程序 → 夜间电台 → 标题主题」切换深蓝 MD 录音机。两款机身都带 `poaries` 作者铭刻。方向键切换焦点，Enter 确认，Esc 返回。
+- 打开聊天后会进入歌词内页。大屏按左页、右页的顺序读，手机按单页读。底部可输入页码跳转，也可一次向前或向后跳 10 个阅读页。「跳到楼层」按酒馆的消息编号定位。分页随字号和屏幕尺寸调整。页数后的 `+` 表示还有更早的聊天，继续往前翻可加载。
 - 正文段落首行缩进两个汉字。指针和触摸会移动纸面上的柔和漫反射，纸纤维、装订折痕和文字仍然清晰。减弱动效模式保持固定光照。
 - 「阅读设置」可选择正文字体，调整字号、纸面颜色，以及正文、斜体、引号和下划线颜色。乐米栀夏浅风体从本机安装的字体读取。编辑消息和切换回复使用楼层原有的控件。「原生视图」可恢复酒馆聊天布局，魔杖菜单中的「打开歌词内页」可切回。
 - 「设置」或阅读器上的「扩展程序」可以打开唱片盒细页。顶部分类可以切换九个主题页面。使用左右箭头切换枚举和开关，拖动带数字的进度条调整范围参数。
@@ -45,4 +45,4 @@ GitHub 提供安装和更新。装好以后，页面、字体、图像和声音�
 
 白光明朝、侵食明朝、香萃积雪宋、秋叶圆体 16 和人偶仿宋 16 随包提供，许可与版权声明在字体目录和全局脚本中。缺字由默认宋体补齐。 [白光明朝](https://booth.pm/ja/items/8292561) · [侵食明朝](https://booth.pm/ja/items/8571086) · [香萃积雪宋](https://github.com/Miiiller/Xiangcui-Jixuesong) · [秋叶圆体 16](https://github.com/yzdnn/QiuYeYuanTi-16) · [人偶仿宋 16](https://github.com/yzdnn/RenOuFangSong-16)
 
-主题的音乐、环境声和操作音效位于 `assets/mixtape/audio/`。内置标题曲《Slater Synth Track》对应 `SLATER_SYNTH_ODYSSEY_wip1.mp3`，约 5 分 29 秒。酒馆助手版将音频内嵌在全局脚本 JSON 中。进入设置时音乐淡出，菜单环境声继续播放。
+主题的音乐、环境声和操作音效位于 `assets/mixtape/audio/`。内置曲目按顺序为《Yesterday and Today》（Yes）、《ポルターガイスト》和《If》（Bread），默认从第一首开始。酒馆助手版将音频内嵌在全局脚本 JSON 中。进入设置时音乐淡出，菜单环境声继续播放。

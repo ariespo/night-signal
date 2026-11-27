@@ -141,7 +141,10 @@ function renderExtensions(ui) {
     const audio = ui.section('音乐与音效');
     for (const [group, fields] of [[theme, behaviorFields], [appearance, appearanceFields], [audio, audioFields]]) {
         for (const [key, label] of fields) {
-            ui.field(group, label, `[data-ns-theme-option="${key}"]`, { event: 'input', allowHidden: true });
+            ui.field(group, label, `[data-ns-theme-option="${key}"]`, {
+                event: key === 'titleTheme' ? 'change' : 'input',
+                allowHidden: true,
+            });
         }
     }
     ui.field(audio, '当前曲目', '[data-ns-music-selection]', { event: 'change', allowHidden: true });

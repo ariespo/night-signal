@@ -37,6 +37,7 @@ const readingFonts = {
     lemi: '乐米栀夏浅风体',
 };
 const historyBatchSize = 24;
+const pageJumpSize = 10;
 
 function readPreferences(stored) {
     const preferences = { ...defaults };
@@ -89,9 +90,17 @@ function createControls(document) {
     pages.className = 'ns-reader-pages';
     pages.setAttribute('aria-label', '歌词内页翻页');
     pages.innerHTML = `
-        <button type="button" data-ns-previous aria-label="上一页">‹</button>
-        <output data-ns-page aria-live="polite"></output>
-        <button type="button" data-ns-next aria-label="下一页">›</button>
+        <div class="ns-reader-page-steps">
+            <button type="button" data-ns-previous-ten aria-label="向前跳 10 页" title="向前跳 10 页">−10</button>
+            <button type="button" data-ns-previous aria-label="上一页">‹</button>
+            <output data-ns-page aria-live="polite"></output>
+            <button type="button" data-ns-next aria-label="下一页">›</button>
+            <button type="button" data-ns-next-ten aria-label="向后跳 10 页" title="向后跳 10 页">+10</button>
+        </div>
+        <form class="ns-reader-page-jump">
+            <input data-ns-page-input type="number" min="1" step="1" inputmode="numeric" placeholder="页码" aria-label="阅读页码" required>
+            <button type="submit">跳转</button>
+        </form>
         <button type="button" data-ns-latest hidden>回到最新</button>`;
     return { header, pages };
 }
@@ -133,8 +142,13 @@ export function mountMixtapeReader(document, {
     const options = header.querySelector('.ns-reader-options');
     const previous = pages.querySelector('[data-ns-previous]');
     const next = pages.querySelector('[data-ns-next]');
+    const previousTen = pages.querySelector('[data-ns-previous-ten]');
+    const nextTen = pages.querySelector('[data-ns-next-ten]');
     const latest = pages.querySelector('[data-ns-latest]');
     const pageNumber = pages.querySelector('[data-ns-page]');
+    const pageJump = pages.querySelector('.ns-reader-page-jump');
+    const pageInput = pageJump.querySelector('input');
+    const pageSubmit = pageJump.querySelector('button');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     chat.before(header);
@@ -261,6 +275,10 @@ export function mountMixtapeReader(document, {
         const atLatest = first >= lastSpread();
         previous.disabled = loading || (first <= 0 && !older);
         next.disabled = loading || atLatest;
+        previousTen.disabled = previous.disabled;
+        nextTen.disabled = next.disabled;
+        pageInput.disabled = pageSubmit.disabled = loading || !layout.pages;
+        pageInput.max = String(layout.pages);
         latest.disabled = loading;
         latest.hidden = atLatest;
     }
@@ -310,7 +328,7 @@ export function mountMixtapeReader(document, {
         updatePageControls();
     }
 
-    function refreshLayout() {
+    function refreshLayout({ prefill = true } = {}) {
         if (!active || turning) return;
         pageWidth = chat.clientWidth;
         const leaves = pageWidth >= 760 ? 2 : 1;
@@ -327,7 +345,7 @@ export function mountMixtapeReader(document, {
         const page = following ? lastSpread() : anchor ? resolveReaderAnchor(chat, layout, anchor) : priorPage;
         showPage(page);
         refreshFloorOptions();
-        primeHistory();
+        if (prefill) primeHistory();
     }
 
     function queueLayout() {
@@ -417,28 +435,37 @@ export function mountMixtapeReader(document, {
         }
     }
 
-    async function previousPage() {
-        if (!active || turning || historyLoad) return;
-        const start = spreadStart(currentPage);
-        if (start > 0) {
-            await navigate(start - layout.visibleLeaves);
+    async function stepBack(distance, { bySpread = false } = {}) {
+        if (!active || turning || historyLoad || !layout.pages) return;
+        const position = () => bySpread ? spreadStart(currentPage) : currentPage;
+        let older = firstRenderedFloor();
+        if (!position() && !older) return;
+        if (position() >= distance || !older) {
+            await navigate(Math.max(0, position() - distance), { animate: bySpread });
             return;
         }
-        const older = firstRenderedFloor();
-        if (!older) return;
+
         const request = epoch;
+        const startingAnchor = captureReaderAnchor(chat, layout, position());
         following = false;
-        anchor = captureReaderAnchor(chat, layout, currentPage);
-        historyPrefillStart = older;
         try {
-            if (!await revealOlderFloors(Math.max(0, older - historyBatchSize), request) || request !== epoch) return;
-            refreshLayout();
-            const target = Math.max(0, spreadStart(currentPage) - layout.visibleLeaves);
-            showPage(target);
-            markFloor();
+            while (older > 0 && position() < distance) {
+                historyPrefillStart = older;
+                if (!await revealOlderFloors(Math.max(0, older - historyBatchSize), request) || request !== epoch) return;
+                anchor = startingAnchor;
+                refreshLayout({ prefill: false });
+                const first = firstRenderedFloor();
+                if (first >= older) break;
+                older = first;
+            }
+            await navigate(Math.max(0, position() - distance), { animate: false });
         } catch (error) {
             console.warn('[Night Signal] Could not load earlier chat pages', error);
         }
+    }
+
+    function previousPage() {
+        return stepBack(layout.visibleLeaves, { bySpread: true });
     }
 
     function syncActive() {
@@ -547,9 +574,19 @@ export function mountMixtapeReader(document, {
 
     previous.addEventListener('click', () => void previousPage(), { signal });
     next.addEventListener('click', () => void navigate(spreadStart(currentPage) + layout.visibleLeaves), { signal });
+    previousTen.addEventListener('click', () => void stepBack(pageJumpSize), { signal });
+    nextTen.addEventListener('click', () => void navigate(Math.min(currentPage + pageJumpSize, layout.pages - 1), { animate: false }), { signal });
+    pageJump.addEventListener('submit', event => {
+        event.preventDefault();
+        const number = pageInput.valueAsNumber;
+        if (!Number.isInteger(number) || number < 1 || number > layout.pages || historyLoad) return;
+        cancelTurn();
+        void navigate(number - 1, { animate: false });
+        pageInput.value = '';
+    }, { signal });
     latest.addEventListener('click', () => void navigate(lastSpread(), { animate: false }), { signal });
     pages.addEventListener('keydown', event => {
-        if (event.altKey || event.ctrlKey || event.metaKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+        if (event.target === pageInput || event.altKey || event.ctrlKey || event.metaKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
         event.preventDefault();
         event.stopPropagation();
         if (event.key === 'ArrowLeft') void previousPage();

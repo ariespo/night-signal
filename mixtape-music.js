@@ -1,4 +1,9 @@
-const builtinTrack = { id: 'slater', title: 'Slater Synth Track', builtin: true, sample: 'SLATER_SYNTH_ODYSSEY_wip1' };
+const builtinTracks = [
+    ['yesterday-and-today', 'Yesterday and Today — Yes'],
+    ['poltergeist', 'ポルターガイスト'],
+    ['if-bread', 'If — Bread'],
+].map(([id, title]) => ({ id, title, builtin: true, sample: id }));
+const defaultTrackId = builtinTracks[0].id;
 const selectionKey = 'night-signal-music-selection';
 const playbackModeKey = 'night-signal-music-mode';
 const audioExtension = /\.(?:aac|aif|aiff|flac|m4a|mp3|oga|ogg|opus|wav|webm)$/i;
@@ -10,16 +15,18 @@ export const musicModes = Object.freeze({
 
 export function createMusicLibrary(window, onChange) {
     let localTracks = [];
-    let selectedId = builtinTrack.id;
+    let selectedId = defaultTrackId;
     let mode = 'sequential';
     let closed = false;
 
     try {
-        selectedId = window.localStorage.getItem(selectionKey) || builtinTrack.id;
+        const storedId = window.localStorage.getItem(selectionKey);
         const storedMode = window.localStorage.getItem(playbackModeKey);
         if (Object.hasOwn(musicModes, storedMode)) mode = storedMode;
+        if (storedId === 'slater') window.localStorage.setItem(selectionKey, defaultTrackId);
+        else if (storedId) selectedId = storedId;
     } catch {
-        // The built-in track remains available when browser storage is blocked.
+        // The built-in tracks remain available when browser storage is blocked.
     }
 
     const database = new Promise((resolve, reject) => {
@@ -50,7 +57,7 @@ export function createMusicLibrary(window, onChange) {
         });
     }
 
-    const getTracks = () => [builtinTrack, ...localTracks];
+    const getTracks = () => [...builtinTracks, ...localTracks];
     const toTrack = record => ({ ...record, id: `local-${record.key}`, builtin: false });
     const getSelected = () => getTracks().find(track => track.id === selectedId);
     const ready = transact('readonly', store => [store.getAll()]).then(
@@ -58,7 +65,7 @@ export function createMusicLibrary(window, onChange) {
         () => {},
     ).then(() => {
         if (closed) return;
-        if (!getSelected()) selectedId = builtinTrack.id;
+        if (!getSelected()) selectedId = defaultTrackId;
         onChange();
     });
 
@@ -81,11 +88,11 @@ export function createMusicLibrary(window, onChange) {
         getState() {
             return {
                 tracks: getTracks().map(({ id, title, builtin }) => ({ id, title, builtin })),
-                selectedId: getSelected()?.id ?? builtinTrack.id,
+                selectedId: getSelected()?.id ?? defaultTrackId,
                 mode,
             };
         },
-        shouldLoop: () => mode === 'repeat-one' || localTracks.length === 0,
+        shouldLoop: () => mode === 'repeat-one',
         setMode(nextMode) {
             if (closed || !Object.hasOwn(musicModes, nextMode)) return false;
             if (mode !== nextMode) {
@@ -131,7 +138,7 @@ export function createMusicLibrary(window, onChange) {
             await transact('readwrite', store => [store.delete(track.key)]);
             if (!closed) {
                 localTracks = localTracks.filter(item => item.id !== id);
-                if (selectedId === id) select(builtinTrack.id);
+                if (selectedId === id) select(defaultTrackId);
                 else onChange();
             }
             return true;

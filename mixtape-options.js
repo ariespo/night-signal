@@ -1,5 +1,10 @@
 import { musicModes } from './mixtape-music.js';
 
+export const titleThemes = Object.freeze({
+    amber: '烟茶色透明 MD',
+    blue: '深蓝 MD 录音机',
+});
+
 export const appearanceFields = [
     ['hideTopNav', '隐藏顶部原生导航', 'top-nav'],
     ['hideReasoning', '隐藏思维链', 'reasoning'],
@@ -13,6 +18,7 @@ export const appearanceFields = [
 export const behaviorFields = [
     ['enabled', '启用夜间电台'],
     ['showOnStartup', '启动时打开标题菜单'],
+    ['titleTheme', '标题主题'],
     ['gamepad', '手柄切换设置板块'],
 ];
 
@@ -42,9 +48,18 @@ export function mountThemeOptions(document, preferences, change) {
         for (const [key, label] of fields) {
             const row = document.createElement('label');
             row.textContent = label;
-            const input = document.createElement('input');
+            const choices = key === 'titleTheme' ? titleThemes : null;
+            const input = document.createElement(choices ? 'select' : 'input');
             input.dataset.nsThemeOption = key;
-            if (typeof preferences[key] === 'boolean') {
+            if (choices) {
+                for (const [value, label] of Object.entries(choices)) {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    option.textContent = label;
+                    input.append(option);
+                }
+                input.value = preferences[key];
+            } else if (typeof preferences[key] === 'boolean') {
                 input.type = 'checkbox';
                 input.checked = preferences[key];
             } else {
@@ -53,8 +68,9 @@ export function mountThemeOptions(document, preferences, change) {
                 input.max = '100';
                 input.value = String(preferences[key]);
             }
-            input.addEventListener('input', () => {
-                preferences[key] = input.type === 'checkbox' ? input.checked : input.valueAsNumber;
+            input.addEventListener(choices ? 'change' : 'input', () => {
+                if (choices) preferences[key] = input.value;
+                else preferences[key] = input.type === 'checkbox' ? input.checked : input.valueAsNumber;
                 change(key);
             });
             row.append(input);

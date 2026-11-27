@@ -3,7 +3,7 @@ import { openGroupById } from '/scripts/group-chats.js';
 import { createAudio } from './audio.js';
 import { mountMixtapeStage } from './mixtape-stage.js';
 import { mountMixtapeReader } from './mixtape-reader.js';
-import { appearanceFields, mountThemeOptions } from './mixtape-options.js';
+import { appearanceFields, mountThemeOptions, titleThemes } from './mixtape-options.js';
 
 const settingsKey = 'nightSignal';
 const context = () => SillyTavern.getContext();
@@ -25,6 +25,7 @@ const defaultPreferences = {
     cueVolume: 100,
     soundEnabled: true,
     showOnStartup: true,
+    titleTheme: 'amber',
     gamepad: true,
     leftDeadZone: 24,
     rightDeadZone: 27,
@@ -33,6 +34,9 @@ const defaultPreferences = {
 function readPreferences(stored) {
     return Object.fromEntries(Object.entries(defaultPreferences).map(([key, fallback]) => {
         const value = stored?.[key];
+        if (key === 'titleTheme') {
+            return [key, typeof value === 'string' && Object.hasOwn(titleThemes, value) ? value : fallback];
+        }
         if (typeof fallback === 'number') {
             return [key, Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : fallback];
         }
@@ -226,6 +230,7 @@ function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, 
     launcher.textContent = '夜间电台';
     launcherItem.append(launcher);
     const dialog = createMenu();
+    dialog.dataset.nsTitleTheme = preferences.titleTheme;
     const pages = [...dialog.querySelectorAll('.ns-page')];
     const status = dialog.querySelector('.ns-status');
     const recentList = dialog.querySelector('.ns-recent');
@@ -539,7 +544,9 @@ function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, 
             if (preferences.showOnStartup && !titleVisited) showTitle();
         },
         updatePreferences(key) {
-            if (appearanceFields.some(([field]) => key === field)) {
+            if (key === 'titleTheme') {
+                dialog.dataset.nsTitleTheme = preferences.titleTheme;
+            } else if (appearanceFields.some(([field]) => key === field)) {
                 applyAppearance(preferences);
                 reader?.refresh();
             } else mixAudio(audio, preferences);

@@ -409,7 +409,7 @@ body.night-signal-reader #sheld > #chat > #show_more_messages {
 }
 
 .ns-reader-header :is(button, select, summary),
-.ns-reader-pages button {
+.ns-reader-pages :is(button, input) {
   box-sizing: border-box;
   min-block-size: 34px;
   margin: 0;
@@ -440,7 +440,7 @@ body.night-signal-reader #sheld > #chat > #show_more_messages {
 }
 
 .ns-reader-header :is(button, select, summary):focus-visible,
-.ns-reader-pages button:focus-visible {
+.ns-reader-pages :is(button, input):focus-visible {
   outline: 2px solid var(--ns-reader-player);
   outline-offset: 2px;
 }
@@ -490,17 +490,27 @@ body.night-signal-reader #sheld > #chat > #show_more_messages {
 }
 
 .ns-reader-pages {
-  position: relative;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 4px 0.6rem;
   padding: 7px 0 3px;
 }
 
-.ns-reader-pages button {
+.ns-reader-page-steps,
+.ns-reader-page-jump {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+}
+
+.ns-reader-pages :is(button, input) {
   min-inline-size: 44px;
   min-block-size: 36px;
 }
 
-.ns-reader-pages button:disabled {
+.ns-reader-pages :is(button, input):disabled {
   opacity: 0.35;
   cursor: default;
 }
@@ -509,13 +519,25 @@ body.night-signal-reader #sheld > #chat > #show_more_messages {
   font-size: 1.4rem;
 }
 
-.ns-reader-pages [data-ns-latest] {
-  position: absolute;
-  inset-inline-end: 0;
+.ns-reader-page-jump input {
+  appearance: textfield;
+  inline-size: 4.75em;
+  background: #17191a;
+  cursor: text;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.ns-reader-page-jump input::-webkit-inner-spin-button,
+.ns-reader-page-jump input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
 }
 
 .ns-reader-pages [data-ns-page] {
   min-inline-size: 6em;
+  white-space: nowrap;
   text-align: center;
   font-weight: 550;
   font-variant-numeric: tabular-nums;
@@ -660,13 +682,21 @@ body.night-signal-reader #sheld #send_but::before {
     max-inline-size: 100%;
   }
 
-  .ns-reader-pages [data-ns-latest] {
-    position: static;
+  .ns-reader-page-steps {
+    flex-basis: 100%;
+    min-inline-size: 0;
+  }
+
+  .ns-reader-pages [data-ns-page] {
+    overflow: hidden;
+    min-inline-size: 0;
+    text-overflow: ellipsis;
+    font-size: clamp(0.75rem, 3.5vw, 1rem);
   }
 }
 
 @media (pointer: coarse) {
-  .ns-reader-pages button,
+  .ns-reader-pages :is(button, input),
   .ns-reader-header :is(button, select, summary) {
     min-block-size: 44px;
   }

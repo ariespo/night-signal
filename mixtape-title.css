@@ -294,7 +294,7 @@ dialog.night-signal:not([open]),
 @media (max-width: 660px) and (orientation: portrait) {
   .night-signal .ns-shell { padding-inline: max(12px, env(safe-area-inset-left, 0px)) max(12px, env(safe-area-inset-right, 0px)); }
 
-  .night-signal .ns-md-device {
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-md-device {
     display: grid;
     gap: 8px;
     inline-size: min(100%, 430px);
@@ -307,7 +307,7 @@ dialog.night-signal:not([open]),
     box-shadow: inset 0 2px 0 #99adb066, inset 0 0 0 3px #10202d, 0 8px 0 #080d11, 0 22px 48px #07090cb8;
   }
 
-  .night-signal .ns-md-face {
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-md-face {
     display: block;
     inline-size: 100%;
     aspect-ratio: 1.08;
@@ -316,7 +316,7 @@ dialog.night-signal:not([open]),
     box-shadow: inset 0 0 9px #0d1a24;
   }
 
-  .night-signal .ns-menu {
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-menu {
     position: relative;
     inset: auto;
     justify-self: center;
@@ -328,7 +328,7 @@ dialog.night-signal:not([open]),
     box-shadow: inset 0 0 0 2px #7c7f7a50, 0 3px 9px #0b1117;
   }
 
-  .night-signal .ns-menu .ns-entry {
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-menu .ns-entry {
     display: grid;
     align-content: center;
     justify-items: center;
@@ -345,19 +345,19 @@ dialog.night-signal:not([open]),
     text-align: center;
   }
 
-  .night-signal .ns-menu .ns-entry::before {
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-menu .ns-entry::before {
     content: var(--key-icon);
     font: 700 clamp(14px, 5.1cqw, 18px)/1 var(--ns-font);
   }
 
-  .night-signal .ns-menu .ns-entry:is(:hover, [data-active="true"]) {
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-menu .ns-entry:is(:hover, [data-active="true"]) {
     background: linear-gradient(138deg, #e3d0b9, #c8b49f 58%, #9e8c7e);
   }
 
-  .night-signal .ns-menu .ns-entry:focus-visible { outline-offset: 1px; }
-  .night-signal .ns-menu .ns-entry:active { box-shadow: inset 0 3px 6px #483e37; }
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-menu .ns-entry:focus-visible { outline-offset: 1px; }
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-menu .ns-entry:active { box-shadow: inset 0 3px 6px #483e37; }
 
-  .night-signal .ns-md-device .ns-menu .ns-entry-label {
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-md-device .ns-menu .ns-entry-label {
     position: static;
     inline-size: auto;
     block-size: auto;
@@ -366,24 +366,24 @@ dialog.night-signal:not([open]),
     white-space: normal;
   }
 
-  .night-signal .ns-menu [data-action="continue"] {
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-menu [data-action="continue"] {
     --key-left: 36%; --key-top: 27%; --key-width: 42%; --key-height: 52%;
     --key-icon: "▶";
   }
 
-  .night-signal .ns-menu [data-action="recent"] {
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-menu [data-action="recent"] {
     --key-left: 5%; --key-top: 28%; --key-width: 29%; --key-height: 47%;
     --key-radius: 42% 24% 24% 42%;
     --key-icon: "◀◀";
   }
 
-  .night-signal .ns-menu [data-action="characters"] {
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-menu [data-action="characters"] {
     --key-left: 32%; --key-top: 4%; --key-width: 49%; --key-height: 21%;
     --key-radius: 44% 44% 18% 18%;
     --key-icon: "▣";
   }
 
-  .night-signal .ns-menu [data-action="settings"] {
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-menu [data-action="settings"] {
     --key-left: 32%; --key-top: 81%; --key-width: 49%; --key-height: 17%;
     --key-radius: 18% 18% 44% 44%;
     --key-icon: "⚙";
@@ -393,15 +393,130 @@ dialog.night-signal:not([open]),
     gap: 5px;
   }
 
-  .night-signal .ns-sound {
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-sound {
     inset: auto auto 8px 12px;
     inline-size: 102px;
     block-size: 44px;
     padding-inline-end: 54px;
   }
 
-  .night-signal .ns-close { inset: auto 12px 8px auto; min-block-size: 44px; }
-  .night-signal .ns-author { inset: auto auto 24px 50%; translate: -50% 0; }
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-close { inset: auto 12px 8px auto; min-block-size: 44px; }
+  .night-signal:not(:where([data-ns-title-theme="amber"])) .ns-author { inset: auto auto 24px 50%; translate: -50% 0; }
+}
+
+dialog.night-signal:where([data-ns-title-theme="amber"]) {
+  --ns-background: #120d0b;
+  --ns-text: #f4dfc5;
+  --ns-muted: #d6bba2;
+  --ns-accent: #ffc67d;
+  --ns-md-face: url("./assets/mixtape/title-md-amber.webp");
+}
+
+/* The amber image is 1672 × 941. Keep the 1190 px central region to fill
+   narrow screens while preserving the positions of the physical controls. */
+.night-signal:where([data-ns-title-theme="amber"]) .ns-md-device {
+  width: min(100%, 1190px, calc((100dvh - 36px) * 1.2646));
+  aspect-ratio: 1190 / 941;
+  background: var(--ns-md-face) center / 140.5042% 100% no-repeat, var(--ns-background);
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-menu .ns-entry {
+  --key-top: 69%;
+  --key-height: 19.75%;
+  --key-radius: 9% / 14%;
+  --key-shape: none;
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-menu [data-action="continue"] {
+  --key-left: 6.72%;
+  --key-width: 25.38%;
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-menu [data-action="recent"] {
+  --key-left: 32.35%;
+  --key-width: 20.93%;
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-menu [data-action="characters"] {
+  --key-left: 53.36%;
+  --key-width: 21.43%;
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-menu [data-action="settings"] {
+  --key-left: 75.13%;
+  --key-width: 18.07%;
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-menu .ns-entry:is(:hover, [data-active="true"]) {
+  background: rgb(255 196 125 / 12%);
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-menu .ns-entry:focus-visible {
+  background: rgb(255 196 125 / 21%);
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-menu .ns-entry:active {
+  background: rgb(34 19 10 / 25%);
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-md-device :is(.ns-sound, .ns-close) {
+  inset: 18.5% auto auto var(--switch-x);
+  inline-size: 8%;
+  block-size: 17%;
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  translate: -50% -50%;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  color: transparent;
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-sound { --switch-x: 12.9%; }
+.night-signal:where([data-ns-title-theme="amber"]) .ns-close { --switch-x: 87.6%; }
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-md-device :is(.ns-sound, .ns-close):hover {
+  background: rgb(255 196 125 / 8%);
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-sound::before,
+.night-signal:where([data-ns-title-theme="amber"]) .ns-sound::after { display: none; }
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-sound[aria-pressed="true"] {
+  background: radial-gradient(ellipse at center 17%, rgb(255 183 92 / 34%), transparent 67%);
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-author {
+  inset: auto auto 7.1% 50%;
+  translate: -50% 0;
+  color: #eec196;
+  text-shadow: 0 1px #22150c, 0 -1px #ffd5b02b;
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-md-history {
+  border-color: #8b6144;
+  background: linear-gradient(145deg, #443023, #2a1d17 75%);
+  box-shadow: inset 0 2px #d9a46f45, 0 8px 0 #1e140f, 0 20px 60px #080a0ca6;
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-md-history .ns-title {
+  border-color: #211510;
+  background: linear-gradient(#ffd597, #dba564);
+  box-shadow: inset 0 3px 5px #71432369;
+  color: #392116;
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-recent .ns-entry,
+.night-signal:where([data-ns-title-theme="amber"]) .ns-back {
+  border-color: #896148;
+  background: #38261c;
+}
+
+.night-signal:where([data-ns-title-theme="amber"]) .ns-recent .ns-entry:is(:hover, :focus-visible, [data-active="true"]) {
+  border-color: #ce9061;
+  background: #4b3222;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -459,6 +574,7 @@ dialog.night-signal:not([open]),
     background: ButtonFace !important;
     color: ButtonText;
     clip-path: none;
+    translate: none;
   }
 
   .night-signal .ns-menu .ns-entry::before,
