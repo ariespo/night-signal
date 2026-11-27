@@ -203,7 +203,7 @@ body.night-signal-reader #sheld > #chat .mes_text {
   margin: 0;
   padding: 6px 0 0;
   min-block-size: 0;
-  font-family: var(--ns-reader-serif);
+  font-family: var(--ns-reader-font, var(--ns-reader-serif));
   font-size: inherit;
   font-weight: 400;
   line-height: 1.66;
@@ -214,6 +214,15 @@ body.night-signal-reader #sheld > #chat .mes_text {
 
 body.night-signal-reader #sheld > #chat .mes_text :where(p) {
   margin-block: 0 0.68em;
+}
+
+body.night-signal-reader #sheld > #chat .mes_text > :where(p) {
+  text-indent: 2em;
+  text-indent: 2ic;
+}
+
+body.night-signal-reader #sheld > #chat .mes_text > :where(p:has(> img:only-child)) {
+  text-indent: 0;
 }
 
 body.night-signal-reader #sheld > #chat .mes_text :where(h1, h2, h3, h4) {

@@ -8,6 +8,7 @@
 @import url("./mixtape-character-pause.css");
 @import url("./mixtape-reader.css");
 @import url("./mixtape-reader-art.css");
+@import url("./mixtape-reader-fonts.css");
 
 body.night-signal-theme {
   --SmartThemeBodyColor: #f5dbcd;

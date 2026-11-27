@@ -8,6 +8,7 @@ import {
 
 const defaults = {
     enabled: true,
+    font: 'default',
     scale: 100,
     background: '#2d2825',
     text: '#edd8bd',
@@ -23,11 +24,21 @@ const colorSettings = [
     ['quote', '引号'],
     ['underline', '下划线'],
 ];
+const readingFonts = {
+    default: '默认宋体',
+    hakkou: '白光明朝',
+    shinsyoku: '侵食明朝',
+    jixuesong: '香萃积雪宋',
+    qiuye: '秋叶圆体 16',
+    renou: '人偶仿宋 16',
+    lemi: '乐米栀夏浅风体',
+};
 const historyBatchSize = 24;
 
 function readPreferences(stored) {
     const preferences = { ...defaults };
     if (typeof stored?.enabled === 'boolean') preferences.enabled = stored.enabled;
+    if (typeof stored?.font === 'string' && Object.hasOwn(readingFonts, stored.font)) preferences.font = stored.font;
     if (Number.isFinite(stored?.scale)) preferences.scale = Math.min(160, Math.max(75, Math.round(stored.scale)));
     for (const [key] of colorSettings) {
         if (/^#[0-9a-f]{6}$/i.test(stored?.[key] ?? '')) preferences[key] = stored[key];
@@ -49,6 +60,12 @@ function createControls(document) {
             <details class="ns-reader-options">
                 <summary>阅读设置</summary>
                 <div class="ns-reader-settings">
+                    <label>正文字体
+                        <select data-ns-reader-setting="font">
+                            ${Object.entries(readingFonts).map(([id, name]) => `<option value="${id}">${name}</option>`).join('')}
+                        </select>
+                    </label>
+                    <small data-ns-reader-local-font hidden>使用本机安装的字体。 <a href="https://font.leminet.cn/#/" target="_blank" rel="noopener noreferrer">乐米字体官网</a></small>
                     <label><span>字号 <output data-ns-scale></output></span>
                         <input data-ns-reader-setting="scale" type="range" min="75" max="160" step="5">
                     </label>
@@ -75,6 +92,7 @@ function createArtwork(document) {
     art.className = 'ns-reader-art';
     art.setAttribute('aria-hidden', 'true');
     art.innerHTML = `
+        <i class="ns-reader-cover"><span class="mt-scene-reflection"></span></i>
         <i class="ns-reader-art-disc"></i>
         <i class="ns-reader-art-case"></i>
         <i class="ns-reader-art-station"></i>
@@ -93,10 +111,12 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
     const { signal } = events;
     const { header, pages } = createControls(document);
     const art = createArtwork(document);
+    const cover = art.querySelector('.ns-reader-cover');
     const floor = header.querySelector('[data-ns-floor]');
     const track = header.querySelector('.ns-reader-track');
     const trackIcon = track.firstElementChild;
     const inputs = [...header.querySelectorAll('[data-ns-reader-setting]')];
+    const localFontNote = header.querySelector('[data-ns-reader-local-font]');
     const scaleValue = header.querySelector('[data-ns-scale]');
     const options = header.querySelector('.ns-reader-options');
     const previous = pages.querySelector('[data-ns-previous]');
@@ -111,6 +131,7 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
 
     let active = false;
     let frame = 0;
+    let reflectionFrame = 0;
     let layout = { stride: 0, pages: 0, visibleLeaves: 1 };
     let anchor = null;
     let currentPage = 0;
@@ -125,6 +146,21 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
 
     const spreadStart = page => Math.floor(page / layout.visibleLeaves) * layout.visibleLeaves;
     const lastSpread = () => spreadStart(Math.max(0, layout.pages - 1));
+
+    function moveCoverReflection(event) {
+        if (!active || reflectionFrame || reducedMotion.matches || context.powerUserSettings?.reduced_motion) return;
+        const { clientX, clientY } = event;
+        reflectionFrame = window.requestAnimationFrame(() => {
+            reflectionFrame = 0;
+            if (!active || reducedMotion.matches || context.powerUserSettings?.reduced_motion) return;
+            const { left, top, width, height } = chat.getBoundingClientRect();
+            if (!width || !height) return;
+            const x = Math.round(((clientX - left) / width - 0.5) * 126);
+            const y = Math.round(((clientY - top) / height - 0.5) * 90);
+            cover.style.setProperty('--mt-reflection-x', `${x}%`);
+            cover.style.setProperty('--mt-reflection-y', `${y}%`);
+        });
+    }
 
     function layoutArtwork() {
         const box = {
@@ -148,6 +184,9 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
 
     function applyPreferences() {
         shell.style.setProperty('--ns-reader-scale', String(preferences.scale / 100));
+        if (preferences.font === 'default') shell.style.removeProperty('--ns-reader-font');
+        else shell.style.setProperty('--ns-reader-font', `"Night Signal Reader ${preferences.font}", var(--ns-reader-serif)`);
+        localFontNote.hidden = preferences.font !== 'lemi';
         for (const [key] of colorSettings) {
             shell.style.setProperty(`--ns-reader-${key === 'background' ? 'bg' : key}`, preferences[key]);
         }
@@ -463,6 +502,8 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
         if (event.target.matches?.(stylesheet)) queueLayout();
     }, { capture: true, signal });
     chat.addEventListener('load', queueLayout, { capture: true, signal });
+    chat.addEventListener('pointerdown', moveCoverReflection, { passive: true, signal });
+    chat.addEventListener('pointermove', moveCoverReflection, { passive: true, signal });
     chat.addEventListener('scroll', () => {
         if (!active || turning || frame || !layout.stride || pageWidth !== chat.clientWidth) return;
         if (Math.abs(chat.scrollLeft - readerPageOffset(layout, currentPage)) <= 1) return;
@@ -509,7 +550,7 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
         queueLayout();
     }, { signal });
     for (const input of inputs) {
-        input.addEventListener('input', () => {
+        input.addEventListener(input.tagName === 'SELECT' ? 'change' : 'input', () => {
             const key = input.dataset.nsReaderSetting;
             preferences[key] = key === 'scale' ? input.valueAsNumber : input.value;
             applyPreferences();
@@ -534,6 +575,7 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
             epoch++;
             cancelTurn();
             window.cancelAnimationFrame(frame);
+            window.cancelAnimationFrame(reflectionFrame);
             events.abort();
             resize.disconnect();
             messages.disconnect();
@@ -545,7 +587,7 @@ export function mountMixtapeReader(document, { context, stored, save, loadHistor
             document.body.classList.remove('night-signal-reader');
             markFloor();
             delete shell.dataset.nsReaderLeaves;
-            for (const property of ['scale', 'bg', 'text', 'em', 'quote', 'underline', 'page-height']) {
+            for (const property of ['scale', 'font', 'bg', 'text', 'em', 'quote', 'underline', 'page-height']) {
                 shell.style.removeProperty(`--ns-reader-${property}`);
             }
             for (const edge of ['top', 'height', 'left', 'width']) shell.style.removeProperty(`--ns-reader-art-${edge}`);

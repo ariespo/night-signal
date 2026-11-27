@@ -1,0 +1,44 @@
+@font-face {
+  font-family: "Night Signal Reader hakkou";
+  src: url("./assets/mixtape/reader-fonts/hakkou.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Night Signal Reader shinsyoku";
+  src: url("./assets/mixtape/reader-fonts/shinsyoku.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Night Signal Reader jixuesong";
+  src: url("./assets/mixtape/reader-fonts/jixuesong.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Night Signal Reader qiuye";
+  src: url("./assets/mixtape/reader-fonts/qiuye.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Night Signal Reader renou";
+  src: url("./assets/mixtape/reader-fonts/renou.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Night Signal Reader lemi";
+  src: local("乐米栀夏浅风体"), local("LemiZhiXiaQianFengTi"), local("LemiLemiZhiXiaQianFengTi");
+  font-display: swap;
+}
+
+.ns-reader-settings [data-ns-reader-local-font] {
+  color: var(--ns-reader-text);
+  line-height: 1.4;
+}
+
+.ns-reader-settings [data-ns-reader-local-font] a {
+  color: var(--ns-reader-underline);
+}
