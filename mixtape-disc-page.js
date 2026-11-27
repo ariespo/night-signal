@@ -60,10 +60,12 @@ export function mountDiscPage(panel, onCue, onChatOpened) {
     header.append(title);
     footer.append(more);
     article.append(header, root, footer);
-    source.prepend(article, back);
 
     const nativeObserver = new win.MutationObserver(records => {
-        if (records.some(record => record.target === source)) refreshBacking();
+        if (records.some(record => record.target === source)) {
+            refreshBacking();
+            observeBacking();
+        }
         requestRefresh();
     });
 
@@ -84,6 +86,9 @@ export function mountDiscPage(panel, onCue, onChatOpened) {
             child.dataset.mtBacking = '';
             child.inert = !native || child.inert;
         }
+    }
+
+    function observeBacking() {
         // The article is animated and writes its own DOM. Observe only native controls.
         nativeObserver.disconnect();
         nativeObserver.observe(source, { childList: true });
@@ -410,7 +415,10 @@ export function mountDiscPage(panel, onCue, onChatOpened) {
 
     const render = source.id === 'WorldInfo' ? renderWorldPage : catalogs.has(source.id) ? renderCatalogPage : renderConfigurationPage;
     const disposePage = render(ui);
+    // Read native styles while projected widgets are detached to batch their first render.
     refresh();
+    source.prepend(article, back);
+    observeBacking();
 
     return () => {
         listeners.abort();

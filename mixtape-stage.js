@@ -149,7 +149,8 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     function refreshArtwork() {
         const node = panel?.node;
         const pause = node?.dataset.mtDiscMode === 'disc' && node.hasAttribute('data-mt-character-pause');
-        decor.dataset.artwork = pause ? 'character-pause' : 'settings';
+        const artwork = pause ? 'character-pause' : 'settings';
+        if (decor.dataset.artwork !== artwork) decor.dataset.artwork = artwork;
         scene?.setArtworkVisible(!pause);
     }
 
@@ -292,7 +293,10 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         modeObserver.disconnect();
         controls.hidden = !next;
         doc.body.classList.toggle('mt-stage-open', !!next);
-        for (const [id, button] of rail) button.setAttribute('aria-pressed', String(id === next?.id));
+        for (const [id, button] of rail) {
+            const pressed = String(id === next?.id);
+            if (button.getAttribute('aria-pressed') !== pressed) button.setAttribute('aria-pressed', pressed);
+        }
 
         if (!next) {
             cancelFlip();
@@ -322,8 +326,6 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         if (caseTurn && next.id !== caseTurn.id) cancelFlip();
         if (!scene) scene = createJewelScene(decor, { resolveAsset, onPose: projectCase });
         refreshArtwork();
-        const order = [...rail.keys()];
-        const direction = old ? Math.sign(order.indexOf(next.id) - order.indexOf(old.id)) : 0;
         const animation = caseTurn ? 'flipping' : old ? 'switching' : 'opening';
         next.node.dataset.mtEntryMotion = animation;
         if (caseTurn && content) {
@@ -333,7 +335,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         boxObserver.observe(next.node);
         modeObserver.observe(next.node, { attributes: true, attributeFilter: ['data-mt-disc-mode', 'data-mt-character-pause'] });
         caseBox = readBox();
-        scene.show(caseBox, direction);
+        scene.show(caseBox);
         revealFlip();
         orientation.setActive(true);
         audio.setSettingsActive(true);

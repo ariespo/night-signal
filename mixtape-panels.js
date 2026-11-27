@@ -106,6 +106,11 @@ export function mountPanelTheme({ document, onPanel, onCue, onOpenFailed, onChat
             return true;
         }
         expectOpening(panel);
+        // Close the previous drawer in the same task so the native opener has
+        // no closing animation to wait for. Leave pinned drawers open.
+        if (isOpen(active) && !active.node.classList.contains('pinnedOpen')) {
+            active.toggle.click();
+        }
         panel.toggle.click();
         syncOpenPanels();
         return true;

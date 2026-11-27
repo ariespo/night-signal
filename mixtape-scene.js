@@ -114,7 +114,7 @@ const decals = [
 
 const hidden = { pitch: -0.28, yaw: 0.38, roll: -0.06, scale: 0.76, lift: 62, opacity: 0 };
 const resting = { pitch: 0.015, yaw: -0.025, roll: 0.01, scale: 1, lift: 0, opacity: 1 };
-const motion = { opening: 520, switching: 315, closing: 360 };
+const motion = { opening: 520, closing: 360 };
 // Timing and edge roll of the cooked PauseToSettings shot (the return retraces it).
 const turnToEdge = 350;
 const turnFromEdge = 433 + 1 / 3;
@@ -601,19 +601,13 @@ export function createJewelScene(surface, {
     }, eventOptions);
     return {
         layout,
-        show(targetBox, direction = 0) {
+        show(targetBox) {
             layout(targetBox);
             const entering = !active;
             active = true;
             surface.hidden = false;
             prepareArtwork();
-            if (turn) return;
-            if (!entering && direction && !reduced()) {
-                pose.yaw += Math.sign(direction) * 0.17;
-                pose.roll += Math.sign(direction) * 0.028;
-                pose.scale *= 0.98;
-            }
-            animate(entering ? 'opening' : 'switching');
+            if (entering && !turn) animate('opening');
         },
         hide() {
             if (!active) return;

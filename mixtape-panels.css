@@ -68,8 +68,15 @@ body.mt-stage-open:not(.reduced-motion) [data-mt-native-panel][data-mt-entry-mot
     animation: mt-drawer-contents-in 400ms cubic-bezier(.19, .72, .25, 1) both;
 }
 
-body.mt-stage-open:not(.reduced-motion) [data-mt-native-panel][data-mt-entry-motion="switching"] > * {
-    animation: mt-drawer-contents-in 235ms cubic-bezier(.18, .78, .29, 1) both;
+@media (prefers-reduced-motion: no-preference) {
+    body.mt-stage-open:not(.reduced-motion) [data-mt-native-panel][data-mt-entry-motion="switching"]
+        > .mt-disc-page > :is(.mt-disc-header, .mt-disc-content, .mt-disc-footer) {
+        animation: mt-drawer-tab-in 105ms ease-out;
+    }
+}
+
+@keyframes mt-drawer-tab-in {
+    from { opacity: 0.8; }
 }
 
 @keyframes mt-drawer-contents-in {
