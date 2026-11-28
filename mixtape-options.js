@@ -27,7 +27,7 @@ export const audioFields = [
     ['effectsVolume', '过场音效'], ['cueVolume', '操作音效'],
 ];
 
-export function mountThemeOptions(document, preferences, change) {
+export function mountThemeOptions(document, preferences, change, { keepNativeNav = false } = {}) {
     const outlet = document.querySelector('#extensions_settings2, #extensions_settings');
     if (!outlet) return null;
 
@@ -61,7 +61,8 @@ export function mountThemeOptions(document, preferences, change) {
                 input.value = preferences[key];
             } else if (typeof preferences[key] === 'boolean') {
                 input.type = 'checkbox';
-                input.checked = preferences[key];
+                input.disabled = keepNativeNav && key === 'hideTopNav';
+                input.checked = !input.disabled && preferences[key];
             } else {
                 input.type = 'range';
                 input.min = '0';

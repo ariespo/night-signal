@@ -134,9 +134,9 @@ function addKeywords(ui, parent, label, name, findEntryField) {
         pendingField = field;
 
         try {
-            const origin = doc.defaultView.location.origin;
-            const worldInfoUrl = new URL('/scripts/world-info.js', origin);
-            const utilsUrl = new URL('/scripts/utils.js', origin);
+            const location = doc.defaultView.location.href;
+            const worldInfoUrl = new URL('/scripts/world-info.js', location);
+            const utilsUrl = new URL('/scripts/utils.js', location);
             const [{ splitKeywordsAndRegexes }, { getSelect2OptionId }] = await Promise.all([
                 import(/* webpackIgnore: true */ worldInfoUrl.href),
                 import(/* webpackIgnore: true */ utilsUrl.href),

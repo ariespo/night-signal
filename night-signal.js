@@ -52,9 +52,10 @@ function mixAudio(audio, preferences) {
     audio.setChannelVolume('ui', preferences.cueVolume / 100);
 }
 
-function applyAppearance(preferences) {
+function applyAppearance(preferences, keepNativeNav = false) {
     for (const [key, , attribute] of appearanceFields) {
-        document.body.toggleAttribute(`data-ns-ui-hide-${attribute}`, Boolean(preferences?.[key]));
+        const hidden = Boolean(preferences?.[key]) && !(keepNativeNav && key === 'hideTopNav');
+        document.body.toggleAttribute(`data-ns-ui-hide-${attribute}`, hidden);
     }
 }
 
@@ -165,6 +166,7 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
     if (!menu) return null;
 
     const ctx = context();
+    const managedChat = window.__TAURITAVERN__?.api?.chatSurface?.isManagedOwnershipRequired?.() === true;
     const preferences = readPreferences(ctx.extensionSettings[settingsKey]);
     const savePreferences = () => {
         ctx.extensionSettings[settingsKey] = { ...ctx.extensionSettings[settingsKey], ...preferences };
@@ -182,11 +184,11 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
                 enableTheme();
             } else disableTheme();
         } else theme?.updatePreferences(key);
-    });
+    }, { keepNativeNav: managedChat });
 
     function enableTheme() {
         if (theme) return;
-        theme = mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, resolveSceneAsset });
+        theme = mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, resolveSceneAsset, managedChat });
         options?.setAudio(theme.audio);
         if (ready) theme.startAudio(Boolean(window.navigator.userActivation?.isActive));
     }
@@ -218,7 +220,7 @@ export function mount({ resolveAudioUrl, resolveSceneAsset, deferStartup = false
     return dispose;
 }
 
-function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, resolveSceneAsset }) {
+function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, resolveSceneAsset, managedChat }) {
     const audio = createAudio(window, resolveAudioUrl);
 
     const launcherItem = document.createElement('div');
@@ -278,7 +280,8 @@ function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, 
         readerToggle.setAttribute('aria-pressed', String(enabled));
     }
 
-    const reader = mountMixtapeReader(document, {
+    // TauriTavern's virtualizer owns the native message list and its scroll position.
+    const reader = managedChat ? null : mountMixtapeReader(document, {
         context: ctx,
         stored: ctx.extensionSettings[settingsKey]?.reader,
         save(value) {
@@ -306,6 +309,8 @@ function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, 
     if (reader) {
         refreshReaderToggle(reader.enabled);
         readerToggle.addEventListener('click', () => reader.setEnabled(!reader.enabled), { signal: domEvents.signal });
+    } else if (managedChat) {
+        readerItem.textContent = '关闭 TauriTavern 的「聊天 DOM 虚拟化」并重启，即可使用歌词内页。';
     }
 
     const toolbar = document.createElement('nav');
@@ -531,10 +536,10 @@ function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, 
     mixAudio(audio, preferences);
 
     menu.append(launcherItem);
-    if (reader) menu.append(readerItem);
+    if (reader || managedChat) menu.append(readerItem);
     document.body.append(dialog, toolbar);
     document.body.classList.add('night-signal-theme');
-    applyAppearance(preferences);
+    applyAppearance(preferences, managedChat);
     refreshSoundState();
     return {
         audio,
@@ -546,7 +551,7 @@ function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, 
             if (key === 'titleTheme') {
                 dialog.dataset.nsTitleTheme = preferences.titleTheme;
             } else if (appearanceFields.some(([field]) => key === field)) {
-                applyAppearance(preferences);
+                applyAppearance(preferences, managedChat);
                 reader?.refresh();
             } else mixAudio(audio, preferences);
         },

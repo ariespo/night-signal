@@ -1,6 +1,8 @@
 # 夜间电台 · Night Signal 1.10
 
-SillyTavern 1.19.0 起可用的 Mixtape 界面扩展。标题菜单接入继续聊天、最近聊天、角色管理和设置。
+支持 SillyTavern 1.16.0 及以上版本的 Mixtape 界面扩展。标题菜单接入继续聊天、最近聊天、角色管理和设置。
+
+TauriTavern 可从应用内的扩展管理安装同一个仓库。手机端在默认聊天模式下使用单页歌词内页。启用「聊天 DOM 虚拟化」时会保留原生纵向聊天和导航，标题、音乐和主题设置仍可使用。关闭虚拟化并重启后即可使用歌词内页。
 
 ## 安装
 
@@ -14,7 +16,7 @@ GitHub 提供安装和更新。装好以后，页面、字体、图像和声音�
 
 ### 其他安装方式
 
-**手动安装**。从 [GitHub Releases](https://github.com/ariespo/night-signal/releases) 下载并解压 `night-signal-1.10.4.zip`，将其中的 `night-signal` 文件夹放入 SillyTavern 的 `data/<用户名>/extensions/`。默认位置为 `data/default-user/extensions/night-signal/`。更新时覆盖同名文件并刷新酒馆。若曾手动安装且想改用 GitHub 更新，可先备份现有扩展目录并将它移到 `extensions/` 之外，再用上面的链接安装。
+**手动安装**。从 [GitHub Releases](https://github.com/ariespo/night-signal/releases) 下载并解压 `night-signal-1.10.5.zip`，将其中的 `night-signal` 文件夹放入 SillyTavern 的 `data/<用户名>/extensions/`。默认位置为 `data/default-user/extensions/night-signal/`。更新时覆盖同名文件并刷新酒馆。若曾手动安装且想改用 GitHub 更新，可先备份现有扩展目录并将它移到 `extensions/` 之外，再用上面的链接安装。
 
 **酒馆助手版**。从 [GitHub Releases](https://github.com/ariespo/night-signal/releases) 下载「酒馆助手全局脚本（JSON）」，在「酒馆助手 → 脚本 → 全局脚本 → 导入」选择下载的文件，然后开启「夜间电台」。原生扩展和全局脚本任选一种。
 

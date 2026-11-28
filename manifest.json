@@ -1,8 +1,8 @@
 {
     "display_name": "夜间电台 · Night Signal",
-    "version": "1.10.4",
+    "version": "1.10.5",
     "author": "Night Signal",
-    "minimum_client_version": "1.19.0",
+    "minimum_client_version": "1.16.0",
     "loading_order": 100,
     "js": "index.js",
     "css": "style.css",
