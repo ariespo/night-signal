@@ -27,6 +27,7 @@ const defaultPreferences = {
     showOnStartup: true,
     titleTheme: 'amber',
     gamepad: true,
+    followMotion: true,
     leftDeadZone: 24,
     rightDeadZone: 27,
 };
@@ -261,6 +262,7 @@ function mountTheme({ ctx, menu, preferences, savePreferences, resolveAudioUrl, 
     const stage = mountMixtapeStage(document, {
         audio: routedAudio,
         preferences,
+        savePreferences,
         resolveAsset: resolveSceneAsset,
         isSoundOn: () => preferences.soundEnabled,
         toggleSound: () => toggleSound({ restoreFocus: false }),

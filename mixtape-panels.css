@@ -1,3 +1,10 @@
+/* SillyTavern can restore pinned drawers even while their native toggles are hidden. */
+body.night-signal-theme[data-ns-ui-hide-top-nav]
+    :is(#left-nav-panel, #right-nav-panel, #WorldInfo):not([data-mt-native-panel]) {
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
 body.mt-stage-open #top-settings-holder {
     z-index: 4100 !important;
     pointer-events: none;

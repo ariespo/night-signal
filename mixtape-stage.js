@@ -25,7 +25,7 @@ function createButton(doc, label, className = '') {
     return button;
 }
 
-export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTitle, isSoundOn, toggleSound }) {
+export function mountMixtapeStage(doc, { audio, preferences, savePreferences, resolveAsset, onTitle, isSoundOn, toggleSound }) {
     const win = doc.defaultView;
     const handoff = doc.createElement('div');
     handoff.className = 'mt-stage-handoff';
@@ -68,13 +68,19 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     const key = doc.createElement('kbd');
     key.textContent = 'ESC';
     returnButton.prepend(key);
-    const rotate = createButton(doc, '旋转光盘盒', 'mt-stage-rotate');
+    const rotationControls = doc.createElement('div');
+    rotationControls.className = 'mt-stage-rotation-controls';
+    const rotate = createButton(doc, '拖动旋转', 'mt-stage-rotate');
     rotate.title = '拖动或使用方向键旋转光盘盒，双击复位';
+    const follow = createButton(doc, '', 'mt-stage-follow');
+    follow.title = '跟随光标或设备倾斜';
+    follow.setAttribute('aria-label', '光盘盒跟随摇摆');
+    rotationControls.append(rotate, follow);
     const sensor = createButton(doc, '', 'mt-stage-sensor');
     sensor.hidden = true;
     const sound = createButton(doc, '声音关', 'mt-stage-sound');
     sound.setAttribute('aria-pressed', 'false');
-    controls.append(nav, returnButton, rotate, sensor, sound);
+    controls.append(nav, returnButton, rotationControls, sensor, sound);
     doc.body.append(handoff, decor, controls);
 
     const lifecycle = new AbortController();
@@ -95,7 +101,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
 
     function showSensorStatus(status) {
         const label = sensorLabels[status];
-        sensor.hidden = !label;
+        sensor.hidden = !preferences.followMotion || !label;
         if (!label) return;
         [sensor.textContent, sensor.title] = label;
         sensor.disabled = status === 'prompting' || status === 'insecure';
@@ -105,7 +111,16 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         onTilt: (pitch, yaw) => scene?.setDeviceTilt(pitch, yaw),
         onStatus: showSensorStatus,
     });
-    showSensorStatus(orientation.status);
+
+    function refreshFollowMotion() {
+        const enabled = preferences.followMotion;
+        follow.textContent = enabled ? '跟随开' : '跟随关';
+        follow.setAttribute('aria-pressed', String(enabled));
+        scene?.setFollowMotion(enabled);
+        orientation.setActive(!!panel && enabled);
+        showSensorStatus(orientation.status);
+    }
+    refreshFollowMotion();
 
     function readBox() {
         const node = panel?.node;
@@ -337,7 +352,7 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
         caseBox = readBox();
         scene.show(caseBox);
         revealFlip();
-        orientation.setActive(true);
+        refreshFollowMotion();
         audio.setSettingsActive(true);
         audio.setAmbient(true);
         audio.cue(old ? 'tab' : fromTitle ? 'settings-open' : 'open');
@@ -399,6 +414,11 @@ export function mountMixtapeStage(doc, { audio, preferences, resolveAsset, onTit
     sound.addEventListener('click', async () => {
         await toggleSound();
         refreshSound();
+    }, listen);
+    follow.addEventListener('click', () => {
+        preferences.followMotion = !preferences.followMotion;
+        refreshFollowMotion();
+        savePreferences();
     }, listen);
     nav.addEventListener('focusin', event => {
         if (event.target instanceof win.HTMLButtonElement) audio.cue('focus');

@@ -132,6 +132,12 @@ export function mountMixtapeReader(document, {
     const { signal } = events;
     const { header, pages } = createControls(document);
     const art = createArtwork(document);
+    const returnButton = document.createElement('button');
+    returnButton.type = 'button';
+    returnButton.className = 'ns-reader-return';
+    returnButton.textContent = '返回歌词内页';
+    returnButton.hidden = true;
+    header.tabIndex = -1;
     const floor = header.querySelector('[data-ns-floor]');
     const track = header.querySelector('.ns-reader-track');
     const trackIcon = track.firstElementChild;
@@ -153,7 +159,7 @@ export function mountMixtapeReader(document, {
     const pageSubmit = pageJump.querySelector('button');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-    chat.before(header);
+    chat.before(header, returnButton);
     composer.before(pages);
     shell.prepend(art);
 
@@ -492,6 +498,7 @@ export function mountMixtapeReader(document, {
         header.hidden = !active;
         pages.hidden = !active;
         art.hidden = !active;
+        returnButton.hidden = active || !displayed;
         if (active) queueLayout();
     }
 
@@ -623,7 +630,14 @@ export function mountMixtapeReader(document, {
     track.addEventListener('click', () => {
         playTrack(track.getAttribute('aria-pressed') !== 'true');
     }, { signal });
-    header.querySelector('.ns-reader-exit').addEventListener('click', () => setEnabled(false), { signal });
+    header.querySelector('.ns-reader-exit').addEventListener('click', () => {
+        setEnabled(false);
+        returnButton.focus({ preventScroll: true });
+    }, { signal });
+    returnButton.addEventListener('click', () => {
+        setEnabled(true);
+        header.focus({ preventScroll: true });
+    }, { signal });
     header.querySelector('[data-ns-reset]').addEventListener('click', () => {
         Object.assign(preferences, defaults);
         applyPreferences();
@@ -676,6 +690,7 @@ export function mountMixtapeReader(document, {
             header.remove();
             pages.remove();
             art.remove();
+            returnButton.remove();
         },
     };
 }

@@ -66,7 +66,8 @@ body.night-signal-theme[data-ns-ui-hide-top-nav]:not(.night-signal-reader, .mt-s
   background: #181716;
 }
 
-.ns-theme-toolbar button {
+.ns-theme-toolbar button,
+#sheld > .ns-reader-return {
   min-block-size: 34px;
   border: 1px solid rgb(224 196 162 / 38%);
   border-radius: 6px;
@@ -75,6 +76,18 @@ body.night-signal-theme[data-ns-ui-hide-top-nav]:not(.night-signal-reader, .mt-s
   background: #2b2723;
   font: inherit;
   cursor: pointer;
+}
+
+#sheld > .ns-reader-return {
+  flex: none;
+  align-self: flex-end;
+  margin: 4px 8px;
+  min-block-size: 40px;
+}
+
+#sheld > .ns-reader-return[hidden],
+body.mt-stage-open #sheld > .ns-reader-return {
+  display: none;
 }
 
 .ns-reader-player {

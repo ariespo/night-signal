@@ -287,6 +287,7 @@ export function createJewelScene(surface, {
     let attributes;
     let frame = 0;
     let active = false;
+    let followMotion = true;
     let artworkVisible = true;
     let artworkRequested = false;
     let box;
@@ -592,7 +593,7 @@ export function createJewelScene(surface, {
     reducedBySystem.addEventListener('change', updateMotionPreference, eventOptions);
     doc.addEventListener('visibilitychange', requestDraw, eventOptions);
     doc.addEventListener('pointermove', event => {
-        if (!active || event.pointerType === 'touch' || reduced()) return;
+        if (!active || !followMotion || event.pointerType === 'touch' || reduced()) return;
         const x = limit(event.clientX / win.innerWidth * 2 - 1, 1);
         const y = limit(1 - event.clientY / win.innerHeight * 2, 1);
         if (x === pointer[0] && y === pointer[1]) return;
@@ -658,8 +659,15 @@ export function createJewelScene(surface, {
             manual = [0, 0];
             requestDraw();
         },
+        setFollowMotion(enabled) {
+            if (followMotion === enabled) return;
+            followMotion = enabled;
+            pointer = [0, 0];
+            deviceTilt.fill(0);
+            requestDraw();
+        },
         setDeviceTilt(pitch, yaw) {
-            if (!Number.isFinite(pitch) || !Number.isFinite(yaw)) return;
+            if (!followMotion || !Number.isFinite(pitch) || !Number.isFinite(yaw)) return;
             if (pitch === deviceTilt[0] && yaw === deviceTilt[1]) return;
             deviceTilt[0] = pitch;
             deviceTilt[1] = yaw;
